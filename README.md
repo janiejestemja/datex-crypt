@@ -50,7 +50,7 @@
 
 ### OpenSSL
 - [OpenSSL repository](https://github.com/openssl/openssl)
-- [OpenSSL rust bindings](https://docs.rs/openssl/latest/openssl/ssl/index.html)
+- [OpenSSL rust bindings](https://docs.rs/openssl/latest/openssl/index.html)
 
 ### Mbed-TLS
 - [Mbed-TLS repository](https://github.com/Mbed-TLS/mbedtls)
