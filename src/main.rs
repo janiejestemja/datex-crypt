@@ -3,16 +3,8 @@ use openssl::pkey::PKey;
 use openssl::rand::rand_priv_bytes;
 
 use datex_crypt::{
-    derive_key_iv,
-    server_generate_key,
-    client_derive_key,
-    server_derive_key,
-    ossl_aes_gcm_enc,
-    ossl_aes_gcm_dec,
-    generate_ecdsa_keypair,
-    sign_ecdsa,
-    verify_ecdsa,
-
+    client_derive_key, derive_key_iv, generate_ecdsa_keypair, ossl_aes_gcm_dec, ossl_aes_gcm_enc,
+    server_derive_key, server_generate_key, sign_ecdsa, verify_ecdsa,
 };
 
 fn main() -> Result<(), ErrorStack> {
@@ -25,7 +17,6 @@ fn main() -> Result<(), ErrorStack> {
     let verified = verify_ecdsa(&server_pub_key.unwrap(), data, &sig);
     println!("{:?}", verified);
 
-
     // Key agreement (ECDH)
     let (server_pkey, server_pub) = server_generate_key()?;
     // Send server_pub to client
@@ -34,7 +25,6 @@ fn main() -> Result<(), ErrorStack> {
     let server_sec = server_derive_key(&client_pub, &server_pkey)?;
 
     assert_eq!(client_sec, server_sec);
-
 
     // Key and salt derivation (PKCS5 PBKDF2 HMAC)
     let pass_a = &server_sec;
@@ -73,8 +63,14 @@ fn main() -> Result<(), ErrorStack> {
     let decrypted_a = ossl_aes_gcm_dec(&key_a, &encrypted_a, &aad).unwrap();
     let decrypted_b = ossl_aes_gcm_dec(&key_b, &encrypted_b, &aad).unwrap();
 
-    println!("Decrypted alice: {:?}", String::from_utf8(decrypted_a).unwrap());
-    println!("Decrypted bob: {:?}", String::from_utf8(decrypted_b).unwrap());
+    println!(
+        "Decrypted alice: {:?}",
+        String::from_utf8(decrypted_a).unwrap()
+    );
+    println!(
+        "Decrypted bob: {:?}",
+        String::from_utf8(decrypted_b).unwrap()
+    );
 
     Ok(())
 }

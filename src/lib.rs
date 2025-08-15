@@ -8,8 +8,8 @@ use openssl::error::ErrorStack;
 use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private, Public};
 
-use openssl::symm::{Cipher, decrypt_aead, encrypt_aead};
 use openssl::sign::{Signer, Verifier};
+use openssl::symm::{Cipher, decrypt_aead, encrypt_aead};
 
 // PKCS PBKDF2 HMAC
 pub fn derive_key_iv(input_key_material: &[u8], salt: &[u8], iter: usize) -> (Vec<u8>, Vec<u8>) {
@@ -98,7 +98,12 @@ pub fn server_derive_key(
 
 // AES 256 GCM
 // returns: concat(nonce || ciphertext || tag)
-pub fn ossl_aes_gcm_enc(key: &[u8; 32], nonce: &[u8; 16], plaintext: &[u8], aad: &[u8]) -> Result<Vec<u8>, ErrorStack> {
+pub fn ossl_aes_gcm_enc(
+    key: &[u8; 32],
+    nonce: &[u8; 16],
+    plaintext: &[u8],
+    aad: &[u8],
+) -> Result<Vec<u8>, ErrorStack> {
     let cipher = Cipher::aes_256_gcm();
 
     // Alternative to nonce from pbkdf2
