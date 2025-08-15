@@ -7,9 +7,14 @@
 *Using a subset of TLS1.3 during development*
 
 - ECDSA
+  - Curve: [Nid::BRAINPOOL_P384R1](https://docs.rs/openssl/latest/openssl/nid/struct.Nid.html#associatedconstant.BRAINPOOL_P384R1)
+  - Hash: [MessageDigest::sha256](https://docs.rs/openssl/latest/openssl/hash/struct.MessageDigest.html#method.sha256)
 - ECDH(E)
+  - Curve: [Nid::SECP384R1](https://docs.rs/openssl/latest/openssl/nid/struct.Nid.html#associatedconstant.SECP384R1)
 - PBKDF2
+  - [MessageDigest::sha256](https://docs.rs/openssl/latest/openssl/hash/struct.MessageDigest.html#method.sha256)
 - AES-GCM
+  - [Cipher::aes_256_gcm](https://docs.rs/openssl/latest/openssl/cipher/struct.Cipher.html#method.aes_256_gcm)
 
 ## Simplified cryptographic handshake
 ---
