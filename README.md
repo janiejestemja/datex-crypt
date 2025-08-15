@@ -51,6 +51,7 @@
 
 ### Datatracker
 - [CheetSheet RFC8446](https://datatracker.ietf.org/doc/html/rfc8446)
+- [HKDF RFC5869](https://datatracker.ietf.org/doc/rfc5869/)
 - [PBKDF2 RFC8018](https://datatracker.ietf.org/doc/rfc8018/)
 
 ### OpenSSL
