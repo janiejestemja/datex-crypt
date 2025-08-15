@@ -39,8 +39,10 @@
 | - | Encrypt and send (**AES**) |
 | Recieve and decrypt (**AES**) | - | 
 
-## Links
+## References
 ---
+### Web API
+- [Ecdsa params](https://developer.mozilla.org/en-US/docs/Web/API/EcdsaParams)
 
 ### Datatracker
 - [CheetSheet RFC8446](https://datatracker.ietf.org/doc/html/rfc8446)
