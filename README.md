@@ -18,4 +18,4 @@
 > *Elliptic Curve Integrated Encryption Scheme*
 
 > [!Note]
-> Asymmetric Encryption.
+> Hybrid Encryption.
