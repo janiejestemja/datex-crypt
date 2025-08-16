@@ -1,48 +1,15 @@
 # Cryptoconcept
 ---
-*Draft*
+*Drafts and concepts*
 
 ## Ciphersuite
 ---
-*Using a subset of TLS1.3 during development*
 
-- ECDSA
-  - Curve: [Nid::BRAINPOOL_P384R1](https://docs.rs/openssl/latest/openssl/nid/struct.Nid.html#associatedconstant.BRAINPOOL_P384R1)
-  - Hash: [MessageDigest::sha256](https://docs.rs/openssl/latest/openssl/hash/struct.MessageDigest.html#method.sha256)
-- ECDH(E)
-  - Curve: [Nid::SECP384R1](https://docs.rs/openssl/latest/openssl/nid/struct.Nid.html#associatedconstant.SECP384R1)
-- PBKDF2
-  - [MessageDigest::sha256](https://docs.rs/openssl/latest/openssl/hash/struct.MessageDigest.html#method.sha256)
-- AES-GCM
-  - [Cipher::aes_256_gcm](https://docs.rs/openssl/latest/openssl/cipher/struct.Cipher.html#method.aes_256_gcm)
+### `ecdsa`
+*elliptic curve digital signature algorithm*
 
-## Simplified cryptographic handshake
----
-
-| Client | Server | 
-|:-------|:-------|
-| "Get" servers "permanent" public key (**ECDSA**) | - | 
-| Load own "permanent" private key (**ECDSA**) | - |
-| Generate ephemeral keypair (**ECDH**) | - |
-| Generate salt (**random**) | - |
-| Sign ephemeral with permanent (**ECDSA**) | - |
-| Connect to server (**TCP**) | - |
-| Send ephemeral public key, signature and salt (**TCP**) | - | 
-| - | Receive from client (**TCP**) | 
-| - | "Get" clients "permantent" public (**ECDSA**) | 
-| - | Verify clients signature (**ECDSA**) | 
-| - | Generate ephemeral keypair (**ECDH**) | 
-| - | Load own "permanent" private key (**ECDSA**) |
-| - | Sign ephemeral with permanent (**ECDSA**) | 
-| - | Send ephemeral public key and signature (**TCP**) |
-| Receive from server (**TCP**) | - | 
-| Verify servers signature (**ECDSA**) | - | 
-| Compute shared secret (**ECDH**) | Compute shared secret (**ECDH**) |
-| Derive key using salt (**HKDF**) | Derive key using salt (**HKDF**) | 
-| Encrypt and send (**AES**) | - |
-| - | Receive and decrypt (**AES**) | 
-| - | Encrypt and send (**AES**) |
-| Recieve and decrypt (**AES**) | - | 
+### `ecies`
+*elliptic curve integrated encryption scheme*
 
 ## References
 ---
@@ -73,4 +40,3 @@
 - [ESP-IDF Mbed TLS](https://docs.espressif.com/projects/esp-idf/en/v5.5/esp32/api-reference/protocols/mbedtls.html)
 - [ESP-IDF repository](https://github.com/espressif/esp-idf/tree/v5.5)
 - [ESP-wolfSSL repository](https://github.com/espressif/esp-wolfssl)
-
