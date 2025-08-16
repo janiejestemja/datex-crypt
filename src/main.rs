@@ -1,7 +1,4 @@
-use openssl::{
-    error::ErrorStack,
-    pkey::PKey,
-};
+use openssl::{error::ErrorStack, pkey::PKey};
 
 mod utils;
 use utils::ecies::ec_keypair;
@@ -45,4 +42,3 @@ fn main() -> Result<(), ErrorStack> {
     signature_logic()?;
     Ok(())
 }
-

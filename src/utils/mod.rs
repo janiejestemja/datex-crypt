@@ -1,2 +1,2 @@
-pub mod ecies;
 pub mod ecdsa;
+pub mod ecies;

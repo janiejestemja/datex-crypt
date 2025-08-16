@@ -1,12 +1,11 @@
 use openssl::{
     ec::{EcGroup, EcKey},
     error::ErrorStack,
-    pkey::{PKey, Private, Public},
-    sign::{Signer, Verifier},
     hash::MessageDigest,
     nid::Nid,
+    pkey::{PKey, Private, Public},
+    sign::{Signer, Verifier},
 };
-
 
 // ECDSA
 pub fn gen_keypair() -> Result<PKey<Private>, ErrorStack> {
