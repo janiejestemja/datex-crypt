@@ -1,12 +1,14 @@
-use openssl::error::ErrorStack;
+use openssl::{
+    error::ErrorStack,
+    pkey::PKey,
+};
 
 mod utils;
 use utils::ecies::ec_keypair;
 use utils::ecies::ecies_decrypt;
 use utils::ecies::ecies_encrypt;
 
-fn main() -> Result<(), ErrorStack> {
-
+fn encryption_logic() -> Result<(), ErrorStack> {
     let (rec_pri, rec_pub) = ec_keypair()?;
     let rec_pri_pem = String::from_utf8(rec_pri.private_key_to_pem_pkcs8().unwrap()).unwrap();
     let rec_pub_pem = String::from_utf8(rec_pub.public_key_to_pem().unwrap()).unwrap();
@@ -20,5 +22,27 @@ fn main() -> Result<(), ErrorStack> {
 
     assert_eq!(&pt, plaintext);
     println!("{:?}", String::from_utf8(pt));
+
     Ok(())
 }
+
+fn signature_logic() -> Result<(), ErrorStack> {
+    let data = b"Hello world!";
+    let server_pkey = utils::ecdsa::gen_keypair().unwrap();
+    let server_pub_pem = server_pkey.public_key_to_pem()?;
+    let server_pub_key = PKey::public_key_from_pem(&server_pub_pem);
+
+    let sig = utils::ecdsa::sign(&server_pkey, data).unwrap();
+    let verified = utils::ecdsa::verify(&server_pub_key.unwrap(), data, &sig);
+
+    println!("{:?}", verified);
+
+    Ok(())
+}
+
+fn main() -> Result<(), ErrorStack> {
+    encryption_logic()?;
+    signature_logic()?;
+    Ok(())
+}
+
