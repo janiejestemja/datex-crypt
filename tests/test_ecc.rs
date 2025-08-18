@@ -1,7 +1,6 @@
-use openssl::pkey::PKey;
 use datex_crypt::utils::ecdsa::*;
 use datex_crypt::utils::ecies::*;
-
+use openssl::pkey::PKey;
 
 #[test]
 fn sign_verify() {
@@ -19,7 +18,6 @@ fn sign_verify() {
     assert!(verified);
     assert!(!unverified);
 }
-
 
 #[test]
 fn ecies_roundtrip() {

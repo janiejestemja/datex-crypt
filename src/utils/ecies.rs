@@ -147,4 +147,3 @@ pub fn ecies_decrypt(
     let aad = aad.unwrap_or(b"");
     aes_gcm_decrypt(&key, &msg.iv, aad, &msg.ct, &msg.tag)
 }
-
