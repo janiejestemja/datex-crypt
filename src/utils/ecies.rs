@@ -147,3 +147,25 @@ pub fn ecies_decrypt(
     let aad = aad.unwrap_or(b"");
     aes_gcm_decrypt(&key, &msg.iv, aad, &msg.ct, &msg.tag)
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn roundtrip() {
+        let (rec_pri, rec_pub) = ec_keypair().unwrap();
+        let rec_pri_pem = String::from_utf8(rec_pri.private_key_to_pem_pkcs8().unwrap()).unwrap();
+        let rec_pub_pem = String::from_utf8(rec_pub.public_key_to_pem().unwrap()).unwrap();
+
+        let plaintext = b"Datex-ecies";
+        let aad = b"context";
+
+        let msg = ecies_encrypt(&rec_pub_pem, plaintext, Some(aad)).unwrap();
+
+        let pt = ecies_decrypt(&rec_pri_pem, &msg, Some(aad)).unwrap();
+
+        assert_ne!(msg.ct, plaintext);
+        assert_eq!(&pt, plaintext);
+    }
+}
