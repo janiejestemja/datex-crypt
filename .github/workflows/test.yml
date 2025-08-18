@@ -1,4 +1,4 @@
-name: main
+name: test
 
 on:
   workflow_dispatch:
@@ -20,5 +20,5 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-      - name: Run main.sh
-        run: bash scripts/main.sh
+      - name: Run test.sh
+        run: bash scripts/test.sh
