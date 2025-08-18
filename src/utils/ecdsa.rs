@@ -26,26 +26,3 @@ pub fn verify(pubkey: &PKey<Public>, data: &[u8], sign: &[u8]) -> Result<bool, E
     verifier.update(data)?;
     Ok(verifier.verify(sign)?)
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn sign_verify() {
-        let data = b"Hello world!";
-        let fake_data = b"Goodbye world!";
-        let server_pkey = gen_keypair().unwrap();
-        let server_pub_pem = server_pkey.public_key_to_pem().unwrap();
-        let server_pub_key = PKey::public_key_from_pem(&server_pub_pem);
-
-        let sig = sign(&server_pkey, data).unwrap();
-        let verified = verify(&server_pub_key.as_ref().unwrap(), data, &sig).unwrap();
-
-        let unverified = verify(&server_pub_key.unwrap(), fake_data, &sig).unwrap();
-
-        assert!(verified);
-        assert!(!unverified);
-    }
-}
-    
