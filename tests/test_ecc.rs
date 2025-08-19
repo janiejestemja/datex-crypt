@@ -3,7 +3,7 @@ use datex_crypt::utils::ecies::*;
 use openssl::pkey::PKey;
 
 #[test]
-fn sign_verify() {
+fn ecdsa_sign_verify() {
     let data = b"Hello world!";
     let fake_data = b"Goodbye world!";
     let server_pkey = gen_keypair().unwrap();
@@ -34,4 +34,12 @@ fn ecies_roundtrip() {
 
     assert_ne!(msg.ct, plaintext);
     assert_eq!(&pt, plaintext);
+}
+
+#[test]
+fn eddsa_sign_verify() {
+    let data = b"Some message to sign".to_vec();
+    let (pub_key, sig) = gen_sig_ed25519(&data).unwrap();
+
+    assert!(ver_sig_ed25519(pub_key, sig, data).unwrap());
 }

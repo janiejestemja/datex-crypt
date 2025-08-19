@@ -1,6 +1,7 @@
 use openssl::{
+    bn::BigNumContext,
     derive::Deriver,
-    ec::{EcGroup, EcKey},
+    ec::{EcGroup, EcKey, PointConversionForm},
     error::ErrorStack,
     md::Md,
     nid::Nid,
@@ -86,6 +87,17 @@ pub fn ec_keypair() -> Result<(PKey<Private>, PKey<Public>), ErrorStack> {
     let pri_pkey = PKey::from_ec_key(ec_key)?;
     let pub_pkey = PKey::public_key_from_pem(&pri_pkey.public_key_to_pem()?)?;
     Ok((pri_pkey, pub_pkey))
+}
+
+pub fn ec_pubkey_raw(pubkey: &PKey<Public>) -> Result<Vec<u8>, ErrorStack> {
+    let ec = pubkey.ec_key()?;
+    let group = ec.group();
+    let point = ec.public_key();
+    Ok(point.to_bytes(
+        group,
+        PointConversionForm::UNCOMPRESSED,
+        &mut BigNumContext::new().unwrap(),
+    )?)
 }
 
 // Derive

@@ -11,7 +11,7 @@ fn encryption_logic() -> Result<(), ErrorStack> {
     let rec_pub_pem = String::from_utf8(rec_pub.public_key_to_pem().unwrap()).unwrap();
 
     let plaintext = b"Datex-ecies";
-    let aad = b"context/AA";
+    let aad = b"context";
 
     let msg = ecies_encrypt(&rec_pub_pem, plaintext, Some(aad))?;
 
@@ -23,7 +23,7 @@ fn encryption_logic() -> Result<(), ErrorStack> {
     Ok(())
 }
 
-fn signature_logic() -> Result<(), ErrorStack> {
+fn ecdsa_logic() -> Result<(), ErrorStack> {
     let data = b"Hello world!";
     let server_pkey = utils::ecdsa::gen_keypair().unwrap();
     let server_pub_pem = server_pkey.public_key_to_pem()?;
@@ -37,8 +37,16 @@ fn signature_logic() -> Result<(), ErrorStack> {
     Ok(())
 }
 
+fn eddsa_logic() -> Result<bool, ErrorStack> {
+    let data = b"Some message to sign".to_vec();
+    let (pub_key, sig) = utils::ecdsa::gen_sig_ed25519(&data).unwrap();
+
+    Ok(utils::ecdsa::ver_sig_ed25519(pub_key, sig, data).unwrap())
+}
+
 fn main() -> Result<(), ErrorStack> {
     encryption_logic()?;
-    signature_logic()?;
+    ecdsa_logic()?;
+    eddsa_logic()?;
     Ok(())
 }
