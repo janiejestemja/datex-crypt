@@ -35,4 +35,3 @@ fn ecies_roundtrip() {
     assert_ne!(msg.ct, plaintext);
     assert_eq!(&pt, plaintext);
 }
-
