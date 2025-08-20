@@ -7,12 +7,14 @@ fn dsa_ed2519() {
 
     let (pub_key, pri_key) = gen_ed25519().unwrap();
 
-    let sig = sig_ed25519(&pri_key, &data).unwrap();
-    let fake_sig = vec![0u8; 64];
+    let sig: [u8; 64] = sig_ed25519(&pri_key, &data).unwrap().try_into().unwrap();
+    let fake_sig = [0u8; 64];
 
+    assert_eq!(pub_key.len(), 32);
+    assert_eq!(pri_key.len(), 32);
     assert_eq!(sig.len(), 64);
-    assert!(ver_ed25519(&pub_key, &sig, &data).unwrap());
 
+    assert!(ver_ed25519(&pub_key, &sig, &data).unwrap());
     assert!(!ver_ed25519(&pub_key, &sig, &fake_data).unwrap());
     assert!(!ver_ed25519(&pub_key, &fake_sig, &data).unwrap());
 }
