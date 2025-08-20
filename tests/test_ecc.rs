@@ -56,4 +56,5 @@ fn dh_x25519() {
     let ser_shared = derive_x25519(&ser_pri, &cli_pub).unwrap();
 
     assert_eq!(cli_shared, ser_shared);
+    assert_eq!(cli_shared.len(), 32);
 }
