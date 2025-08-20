@@ -5,6 +5,7 @@ use openssl::{
     pkey_ctx::{HkdfMode, PkeyCtx},
     md::Md,
     sign::{Signer, Verifier},
+    symm::{Cipher, Crypter, Mode},
 };
 
 // HKDF
@@ -26,6 +27,7 @@ pub fn hkdf(
     Ok(okm)
 }
 
+// XDH
 pub fn gen_x25519() -> Result<(Vec<u8>, Vec<u8>), ErrorStack> {
     let key = PKey::generate_x25519()?;
     let public_key = key.raw_public_key()?;
@@ -42,6 +44,7 @@ pub fn derive_x25519(my_raw: &Vec<u8>, peer_pub: &Vec<u8>) -> Result<Vec<u8>, Er
     deriver.derive_to_vec()
 }
 
+// EdDSA
 pub fn gen_ed25519() -> Result<(Vec<u8>, Vec<u8>), ErrorStack> {
     let key = PKey::generate_ed25519()?;
     let public_key = key.raw_public_key()?;
@@ -61,4 +64,49 @@ pub fn ver_ed25519(pub_key: &Vec<u8>, sig: &Vec<u8>, data: &Vec<u8>) -> Result<b
     let public_key = PKey::public_key_from_raw_bytes(&pub_key, Id::ED25519).unwrap();
     let mut verifier = Verifier::new_without_digest(&public_key).unwrap();
     Ok(verifier.verify_oneshot(&sig, &data).unwrap())
+}
+
+// AES GCM
+pub const KEY_LEN: usize = 32;
+pub const IV_LEN: usize = 12;
+pub const TAG_LEN: usize = 16;
+pub const INFO: &[u8] = b"ECIES|X25519|HKDF-SHA256|AES-256-GCM";
+
+pub fn aes_gcm_encrypt(
+    key: &[u8; KEY_LEN],
+    iv: &[u8; IV_LEN],
+    aad: &[u8],
+    plaintext: &[u8],
+) -> Result<(Vec<u8>, [u8; 16]), ErrorStack> {
+    let cipher = Cipher::aes_256_gcm();
+    let mut enc = Crypter::new(cipher, Mode::Encrypt, key, Some(iv))?;
+    enc.aad_update(aad)?;
+
+    let mut out = vec![0u8; plaintext.len() + cipher.block_size()];
+    let mut count = enc.update(plaintext, &mut out)?;
+    count += enc.finalize(&mut out[count..])?;
+    out.truncate(count);
+
+    let mut tag = [0u8; TAG_LEN];
+    enc.get_tag(&mut tag)?;
+    Ok((out, tag))
+}
+
+pub fn aes_gcm_decrypt(
+    key: &[u8],
+    iv: &[u8],
+    aad: &[u8],
+    ciphertext: &[u8],
+    tag: &[u8; 16],
+) -> Result<Vec<u8>, ErrorStack> {
+    let cipher = Cipher::aes_256_gcm();
+    let mut dec = Crypter::new(cipher, Mode::Decrypt, key, Some(iv))?;
+    dec.aad_update(aad)?;
+    dec.set_tag(tag)?;
+
+    let mut out = vec![0u8; ciphertext.len() + cipher.block_size()];
+    let mut count = dec.update(ciphertext, &mut out)?;
+    count += dec.finalize(&mut out[count..])?;
+    out.truncate(count);
+    Ok(out)
 }
