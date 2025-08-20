@@ -39,7 +39,9 @@ fn ecies_roundtrip() {
 #[test]
 fn eddsa_sign_verify() {
     let data = b"Some message to sign".to_vec();
-    let (pub_key, sig) = gen_sig_ed25519(&data).unwrap();
+    let (pub_key, pri_key) = gen_ed25519().unwrap();
 
-    assert!(ver_sig_ed25519(pub_key, sig, data).unwrap());
+    let sig = sig_ed25519(&pri_key, &data).unwrap();
+
+    assert!(ver_ed25519(pub_key, sig, data).unwrap());
 }

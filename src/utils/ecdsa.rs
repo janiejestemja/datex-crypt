@@ -27,17 +27,23 @@ pub fn verify(pubkey: &PKey<Public>, data: &[u8], sign: &[u8]) -> Result<bool, E
     Ok(verifier.verify(sign)?)
 }
 
-pub fn gen_sig_ed25519(digest: &Vec<u8>) -> Result<(Vec<u8>, Vec<u8>), ErrorStack> {
+pub fn gen_ed25519() -> Result<(Vec<u8>, Vec<u8>), ErrorStack> {
     let key = PKey::generate_ed25519()?;
     let public_key = key.raw_public_key()?;
-
-    let mut signer = Signer::new_without_digest(&key)?;
-    let signature = signer.sign_oneshot_to_vec(digest)?;
-    assert_eq!(signature.len(), 64);
-    Ok((public_key, signature))
+    let private_key = key.raw_private_key()?;
+    Ok((public_key, private_key))
 }
 
-pub fn ver_sig_ed25519(pub_key: Vec<u8>, sig: Vec<u8>, data: Vec<u8>) -> Result<bool, ErrorStack> {
+pub fn sig_ed25519(pri_key: &Vec<u8>, digest: &Vec<u8>) -> Result<Vec<u8>, ErrorStack> {
+    let sig_key = PKey::private_key_from_raw_bytes(pri_key, Id::ED25519).unwrap();
+
+    let mut signer = Signer::new_without_digest(&sig_key)?;
+    let signature = signer.sign_oneshot_to_vec(digest)?;
+    assert_eq!(signature.len(), 64);
+    Ok(signature)
+}
+
+pub fn ver_ed25519(pub_key: Vec<u8>, sig: Vec<u8>, data: Vec<u8>) -> Result<bool, ErrorStack> {
     let public_key = PKey::public_key_from_raw_bytes(&pub_key, Id::ED25519).unwrap();
     let mut verifier = Verifier::new_without_digest(&public_key).unwrap();
     Ok(verifier.verify_oneshot(&sig, &data).unwrap())
