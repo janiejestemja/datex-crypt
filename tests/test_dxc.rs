@@ -34,7 +34,9 @@ fn test_hkdf() {
     const INFO: &[u8] = b"ECIES|X25519|HKDF-SHA256|AES-256-GCM";
     let ikm = vec![0u8; 32];
     let salt = vec![0u8; 16];
+
     let hash = hkdf(&ikm, &salt, &INFO, 32).unwrap();
+
     assert_eq!(hash.len(), 32);
 }
 
@@ -45,9 +47,10 @@ fn aes_gcm_roundtrip() {
     let iv = [0u8; 12];
 
     let data = b"Some message to encrypt".to_vec();
-    let (ciphered, tag) = aes_gcm_encrypt(&key, &iv, &INFO, &data).unwrap();
-    assert_ne!(ciphered, data);
 
+    let (ciphered, tag) = aes_gcm_encrypt(&key, &iv, &INFO, &data).unwrap();
     let deciphered = aes_gcm_decrypt(&key, &iv, &INFO, &ciphered, &tag).unwrap();
+
+    assert_ne!(ciphered, data);
     assert_eq!(data, deciphered.to_vec());
 }

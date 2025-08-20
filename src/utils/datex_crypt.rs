@@ -93,8 +93,8 @@ pub fn aes_gcm_encrypt(
 }
 
 pub fn aes_gcm_decrypt(
-    key: &[u8],
-    iv: &[u8],
+    key: &[u8; KEY_LEN],
+    iv: &[u8; IV_LEN],
     aad: &[u8],
     ciphertext: &[u8],
     tag: &[u8; 16],
