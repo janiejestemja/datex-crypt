@@ -97,7 +97,7 @@ pub fn aes_gcm_decrypt(
     iv: &[u8; IV_LEN],
     aad: &[u8],
     ciphertext: &[u8],
-    tag: &[u8; 16],
+    tag: &[u8; TAG_LEN],
 ) -> Result<Vec<u8>, ErrorStack> {
     let cipher = Cipher::aes_256_gcm();
     let mut dec = Crypter::new(cipher, Mode::Decrypt, key, Some(iv))?;
