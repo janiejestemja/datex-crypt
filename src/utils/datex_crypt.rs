@@ -4,6 +4,7 @@ use openssl::{
     pkey::{Id, PKey},
     pkey_ctx::{HkdfMode, PkeyCtx},
     md::Md,
+    rand::rand_bytes,
     sign::{Signer, Verifier},
     symm::{Cipher, Crypter, Mode},
 };
@@ -73,8 +74,8 @@ pub const TAG_LEN: usize = 16;
 pub const INFO: &[u8] = b"ECIES|X25519|HKDF-SHA256|AES-256-GCM";
 
 pub fn aes_gcm_encrypt(
-    key: &[u8; KEY_LEN],
-    iv: &[u8; IV_LEN],
+    key: &[u8],
+    iv: &[u8],
     aad: &[u8],
     plaintext: &[u8],
 ) -> Result<(Vec<u8>, [u8; 16]), ErrorStack> {
@@ -93,8 +94,8 @@ pub fn aes_gcm_encrypt(
 }
 
 pub fn aes_gcm_decrypt(
-    key: &[u8; KEY_LEN],
-    iv: &[u8; IV_LEN],
+    key: &[u8],
+    iv: &[u8],
     aad: &[u8],
     ciphertext: &[u8],
     tag: &[u8; TAG_LEN],
@@ -109,4 +110,66 @@ pub fn aes_gcm_decrypt(
     count += dec.finalize(&mut out[count..])?;
     out.truncate(count);
     Ok(out)
+}
+
+// ECIES
+pub const SALT_LEN: usize = 16;
+
+#[derive(Debug, Clone)]
+pub struct Crypt {
+    // Senders eph EC pub key (PEM)
+    pub pub_key: Vec<u8>,
+    // HKDF salt
+    pub salt: [u8; SALT_LEN],
+    // IV/nonce for AES-GCM
+    pub iv: [u8; IV_LEN],
+    // ciphertext
+    pub ct: Vec<u8>,
+    // AES-GCM tag (128-bit)
+    pub tag: [u8; TAG_LEN],       
+}
+pub fn ecies_encrypt(
+    rec_pub_raw: &[u8],
+    plaintext: &[u8],
+    aad: &[u8],
+) -> Result<Crypt, ErrorStack> {
+    let (eph_pub, eph_pri) = gen_x25519()?;
+    let shared = derive_x25519(&eph_pri, &rec_pub_raw.to_vec())?;
+
+    // Map ikm to okm
+    let mut salt = [0u8; 16];
+    rand_bytes(&mut salt)?; // random salt?
+    let key = hkdf(&shared, &salt, &INFO, 32).unwrap();
+
+    // Nonce for AES
+    let mut iv = [0u8; 12]; // 96-bit nonce?
+    rand_bytes(&mut iv).unwrap();
+
+    // Encrypt
+    let (ct, tag) = aes_gcm_encrypt(
+        &key,
+        &iv,
+        aad,
+        plaintext,
+    )?;
+
+    Ok(Crypt {
+        pub_key: eph_pub,
+        salt: salt,
+        iv: iv,
+        ct: ct,
+        tag: tag,
+    })
+}
+// Recipient
+pub fn ecies_decrypt(
+    rec_pri_raw: &[u8],
+    msg: &Crypt,
+    aad: &[u8],
+) -> Result<Vec<u8>, ErrorStack> {
+
+    let shared = derive_x25519(&rec_pri_raw.to_vec(), &msg.pub_key)?;
+    let key = hkdf(&shared, &msg.salt, &INFO, 32)?;
+
+    aes_gcm_decrypt(&key, &msg.iv, aad, &msg.ct, &msg.tag)
 }

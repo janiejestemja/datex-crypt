@@ -54,3 +54,14 @@ fn aes_gcm_roundtrip() {
     assert_ne!(ciphered, data);
     assert_eq!(data, deciphered.to_vec());
 }
+
+#[test]
+fn ecies_roundtrip() {
+    const INFO: &[u8] = b"ECIES|X25519|HKDF-SHA256|AES-256-GCM";
+    let data = b"Some message to encrypt".to_vec();
+    let (rec_pub_key, rec_pri_key) = gen_x25519().unwrap();
+    let ciphered = ecies_encrypt(&rec_pub_key.to_vec(), &data, INFO).unwrap();
+    let deciphered = ecies_decrypt(&rec_pri_key.to_vec(), &ciphered, INFO).unwrap();
+
+    assert_eq!(data, deciphered);
+}
