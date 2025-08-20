@@ -1,13 +1,20 @@
 use datex_crypt::utils::datex_crypt::*;
 
 #[test]
-fn eddsa_sign_verify() {
+fn dsa_ed2519() {
     let data = b"Some message to sign".to_vec();
+    let fake_data = b"Some other message to sign".to_vec();
+
     let (pub_key, pri_key) = gen_ed25519().unwrap();
 
     let sig = sig_ed25519(&pri_key, &data).unwrap();
+    let fake_sig = vec![0u8; 64];
 
-    assert!(ver_ed25519(pub_key, sig, data).unwrap());
+    assert_eq!(sig.len(), 64);
+    assert!(ver_ed25519(&pub_key, &sig, &data).unwrap());
+
+    assert!(!ver_ed25519(&pub_key, &sig, &fake_data).unwrap());
+    assert!(!ver_ed25519(&pub_key, &fake_sig, &data).unwrap());
 }
 
 #[test]

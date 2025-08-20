@@ -54,11 +54,10 @@ pub fn sig_ed25519(pri_key: &Vec<u8>, digest: &Vec<u8>) -> Result<Vec<u8>, Error
 
     let mut signer = Signer::new_without_digest(&sig_key)?;
     let signature = signer.sign_oneshot_to_vec(digest)?;
-    assert_eq!(signature.len(), 64);
     Ok(signature)
 }
 
-pub fn ver_ed25519(pub_key: Vec<u8>, sig: Vec<u8>, data: Vec<u8>) -> Result<bool, ErrorStack> {
+pub fn ver_ed25519(pub_key: &Vec<u8>, sig: &Vec<u8>, data: &Vec<u8>) -> Result<bool, ErrorStack> {
     let public_key = PKey::public_key_from_raw_bytes(&pub_key, Id::ED25519).unwrap();
     let mut verifier = Verifier::new_without_digest(&public_key).unwrap();
     Ok(verifier.verify_oneshot(&sig, &data).unwrap())
