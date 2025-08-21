@@ -1,11 +1,6 @@
-use datex_crypt::utils::datex_crypt::CryptoNative;
-use datex_crypt::utils::datex_crypt::{
-    aes_gcm_encrypt,
-    aes_gcm_decrypt,
-    derive_x25519,
-    hkdf
-};
 use datex_crypt::utils::crypto::CryptoTrait;
+use datex_crypt::utils::datex_crypt::CryptoNative;
+use datex_crypt::utils::datex_crypt::{aes_gcm_decrypt, aes_gcm_encrypt, derive_x25519, hkdf};
 
 #[tokio::test]
 async fn dsa_ed2519() {
@@ -15,7 +10,12 @@ async fn dsa_ed2519() {
 
     let (pub_key, pri_key) = CRYPTO.gen_ed25519().await.unwrap();
 
-    let sig: [u8; 64] = CRYPTO.sig_ed25519(&pri_key, &data).await.unwrap().try_into().unwrap();
+    let sig: [u8; 64] = CRYPTO
+        .sig_ed25519(&pri_key, &data)
+        .await
+        .unwrap()
+        .try_into()
+        .unwrap();
     let fake_sig = [0u8; 64];
 
     assert_eq!(pub_key.len(), 32);
@@ -23,8 +23,18 @@ async fn dsa_ed2519() {
     assert_eq!(sig.len(), 64);
 
     assert!(CRYPTO.ver_ed25519(&pub_key, &sig, &data).await.unwrap());
-    assert!(!CRYPTO.ver_ed25519(&pub_key, &sig, &fake_data).await.unwrap());
-    assert!(!CRYPTO.ver_ed25519(&pub_key, &fake_sig, &data).await.unwrap());
+    assert!(
+        !CRYPTO
+            .ver_ed25519(&pub_key, &sig, &fake_data)
+            .await
+            .unwrap()
+    );
+    assert!(
+        !CRYPTO
+            .ver_ed25519(&pub_key, &fake_sig, &data)
+            .await
+            .unwrap()
+    );
 }
 
 #[test]

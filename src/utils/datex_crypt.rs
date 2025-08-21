@@ -1,4 +1,3 @@
-use std::pin::Pin;
 use super::crypto::{CryptoError, CryptoTrait};
 use openssl::{
     derive::Deriver,
@@ -9,6 +8,7 @@ use openssl::{
     sign::{Signer, Verifier},
     symm::{Cipher, Crypter, Mode},
 };
+use std::pin::Pin;
 
 pub const KEY_LEN: usize = 32;
 pub const IV_LEN: usize = 12;
@@ -34,8 +34,7 @@ pub struct Crypt {
 
 // HKDF (hash)
 pub fn hkdf(ikm: &[u8], salt: &[u8], info: &[u8], out_len: usize) -> Result<Vec<u8>, CryptoError> {
-    let mut ctx = PkeyCtx::new_id(Id::HKDF)
-        .map_err(|_| CryptoError::KeyDerivationFailed)?;
+    let mut ctx = PkeyCtx::new_id(Id::HKDF).map_err(|_| CryptoError::KeyDerivationFailed)?;
     ctx.derive_init()
         .map_err(|_| CryptoError::KeyDerivationFailed)?;
     ctx.set_hkdf_mode(HkdfMode::EXTRACT_THEN_EXPAND)
@@ -64,11 +63,12 @@ pub fn derive_x25519(
     let my_priv = PKey::private_key_from_raw_bytes(my_raw, Id::X25519)
         .map_err(|_| CryptoError::KeyImportFailed)?;
 
-    let mut deriver = Deriver::new(&my_priv)
+    let mut deriver = Deriver::new(&my_priv).map_err(|_| CryptoError::KeyDerivationFailed)?;
+    deriver
+        .set_peer(&peer_pub)
         .map_err(|_| CryptoError::KeyDerivationFailed)?;
-    deriver.set_peer(&peer_pub)
-        .map_err(|_| CryptoError::KeyDerivationFailed)?;
-    deriver.derive_to_vec()
+    deriver
+        .derive_to_vec()
         .map_err(|_| CryptoError::KeyDerivationFailed)
 }
 
@@ -86,9 +86,11 @@ pub fn aes_gcm_encrypt(
         .map_err(|_| CryptoError::EncryptionError)?;
 
     let mut out = vec![0u8; plaintext.len() + cipher.block_size()];
-    let mut count = enc.update(plaintext, &mut out)
+    let mut count = enc
+        .update(plaintext, &mut out)
         .map_err(|_| CryptoError::EncryptionError)?;
-    count += enc.finalize(&mut out[count..])
+    count += enc
+        .finalize(&mut out[count..])
         .map_err(|_| CryptoError::EncryptionError)?;
     out.truncate(count);
 
@@ -110,13 +112,14 @@ pub fn aes_gcm_decrypt(
         .map_err(|_| CryptoError::DecryptionError)?;
     dec.aad_update(aad)
         .map_err(|_| CryptoError::DecryptionError)?;
-    dec.set_tag(tag)
-        .map_err(|_| CryptoError::DecryptionError)?;
+    dec.set_tag(tag).map_err(|_| CryptoError::DecryptionError)?;
 
     let mut out = vec![0u8; ciphertext.len() + cipher.block_size()];
-    let mut count = dec.update(ciphertext, &mut out)
+    let mut count = dec
+        .update(ciphertext, &mut out)
         .map_err(|_| CryptoError::DecryptionError)?;
-    count += dec.finalize(&mut out[count..])
+    count += dec
+        .finalize(&mut out[count..])
         .map_err(|_| CryptoError::DecryptionError)?;
     out.truncate(count);
     Ok(out)
@@ -126,13 +129,14 @@ pub struct CryptoNative;
 impl CryptoTrait for CryptoNative {
     // Generate encryption keypair
     fn gen_x25519(&self) -> Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError> {
-        let key = PKey::generate_x25519()
-            .map_err(|_| CryptoError::KeyGeneratorFailed)?;
-        let public_key: [u8; KEY_LEN] = key.raw_public_key()
+        let key = PKey::generate_x25519().map_err(|_| CryptoError::KeyGeneratorFailed)?;
+        let public_key: [u8; KEY_LEN] = key
+            .raw_public_key()
             .map_err(|_| CryptoError::KeyGeneratorFailed)?
             .try_into()
             .map_err(|_| CryptoError::KeyGeneratorFailed)?;
-        let private_key: [u8; KEY_LEN] = key.raw_private_key()
+        let private_key: [u8; KEY_LEN] = key
+            .raw_private_key()
             .map_err(|_| CryptoError::KeyGeneratorFailed)?
             .try_into()
             .map_err(|_| CryptoError::KeyGeneratorFailed)?;
@@ -146,10 +150,11 @@ impl CryptoTrait for CryptoNative {
         plaintext: &[u8],
         aad: &[u8],
     ) -> Result<Crypt, CryptoError> {
-        let (eph_pub, eph_pri) = self.gen_x25519()
+        let (eph_pub, eph_pri) = self
+            .gen_x25519()
             .map_err(|_| CryptoError::KeyGeneratorFailed)?;
-        let shared = derive_x25519(&eph_pri, rec_pub_raw)
-            .map_err(|_| CryptoError::KeyDerivationFailed)?;
+        let shared =
+            derive_x25519(&eph_pri, rec_pub_raw).map_err(|_| CryptoError::KeyDerivationFailed)?;
 
         // Map ikm to okm
         let mut salt = [0u8; SALT_LEN];
@@ -161,8 +166,7 @@ impl CryptoTrait for CryptoNative {
 
         // Nonce for AES
         let mut iv = [0u8; IV_LEN];
-        rand_bytes(&mut iv)
-            .map_err(|_| CryptoError::KeyDerivationFailed)?;
+        rand_bytes(&mut iv).map_err(|_| CryptoError::KeyDerivationFailed)?;
 
         // Encrypt
         let (ct, tag) = aes_gcm_encrypt(&key, &iv, aad, plaintext)?;
@@ -191,37 +195,40 @@ impl CryptoTrait for CryptoNative {
             .map_err(|_| CryptoError::DecryptionError)
     }
     // EdDSA keygen
-    fn gen_ed25519(&self) -> 
-        Pin<Box<dyn Future<Output = Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError>> +'static>> {
+    fn gen_ed25519(
+        &self,
+    ) -> Pin<Box<dyn Future<Output = Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError>> + 'static>>
+    {
         Box::pin(async move {
-        let key = PKey::generate_ed25519()
-            .map_err(|_| CryptoError::KeyGeneratorFailed)?;
-            
-        let public_key: [u8; KEY_LEN] = key.raw_public_key()
-            .map_err(|_| CryptoError::KeyGeneratorFailed)?
-            .try_into()
-            .map_err(|_| CryptoError::KeyGeneratorFailed)?;
-        let private_key: [u8; KEY_LEN] = key.raw_private_key()
-            .map_err(|_| CryptoError::KeyGeneratorFailed)?
-            .try_into()
-            .map_err(|_| CryptoError::KeyGeneratorFailed)?;
-        Ok((public_key, private_key))
+            let key = PKey::generate_ed25519().map_err(|_| CryptoError::KeyGeneratorFailed)?;
+
+            let public_key: [u8; KEY_LEN] = key
+                .raw_public_key()
+                .map_err(|_| CryptoError::KeyGeneratorFailed)?
+                .try_into()
+                .map_err(|_| CryptoError::KeyGeneratorFailed)?;
+            let private_key: [u8; KEY_LEN] = key
+                .raw_private_key()
+                .map_err(|_| CryptoError::KeyGeneratorFailed)?
+                .try_into()
+                .map_err(|_| CryptoError::KeyGeneratorFailed)?;
+            Ok((public_key, private_key))
         })
     }
 
     // EdDSA signature
     fn sig_ed25519<'a>(
-        &'a self, 
-        pri_key: &'a [u8; KEY_LEN], 
-        digest: &'a Vec<u8>
+        &'a self,
+        pri_key: &'a [u8; KEY_LEN],
+        digest: &'a Vec<u8>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, CryptoError>> + Send + 'a>> {
-
         Box::pin(async move {
             let sig_key = PKey::private_key_from_raw_bytes(pri_key, Id::ED25519)
                 .map_err(|_| CryptoError::KeyImportFailed)?;
-            let mut signer = Signer::new_without_digest(&sig_key)
-                .map_err(|_| CryptoError::SigningError)?;
-            let signature = signer.sign_oneshot_to_vec(digest)
+            let mut signer =
+                Signer::new_without_digest(&sig_key).map_err(|_| CryptoError::SigningError)?;
+            let signature = signer
+                .sign_oneshot_to_vec(digest)
                 .map_err(|_| CryptoError::SigningError)?;
             Ok(signature)
         })
@@ -239,7 +246,8 @@ impl CryptoTrait for CryptoNative {
                 .map_err(|_| CryptoError::KeyImportFailed)?;
             let mut verifier = Verifier::new_without_digest(&public_key)
                 .map_err(|_| CryptoError::KeyImportFailed)?;
-            Ok(verifier.verify_oneshot(sig, &data)
+            Ok(verifier
+                .verify_oneshot(sig, &data)
                 .map_err(|_| CryptoError::VerificationError)?)
         })
     }
