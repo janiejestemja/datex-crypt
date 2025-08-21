@@ -7,24 +7,24 @@ use datex_crypt::utils::datex_crypt::{
 };
 use datex_crypt::utils::crypto::CryptoTrait;
 
-#[test]
-fn dsa_ed2519() {
+#[tokio::test]
+async fn dsa_ed2519() {
     static CRYPTO: CryptoNative = CryptoNative {};
     let data = b"Some message to sign".to_vec();
     let fake_data = b"Some other message to sign".to_vec();
 
-    let (pub_key, pri_key) = CRYPTO.gen_ed25519().unwrap();
+    let (pub_key, pri_key) = CRYPTO.gen_ed25519().await.unwrap();
 
-    let sig: [u8; 64] = CRYPTO.sig_ed25519(&pri_key, &data).unwrap().try_into().unwrap();
+    let sig: [u8; 64] = CRYPTO.sig_ed25519(&pri_key, &data).await.unwrap().try_into().unwrap();
     let fake_sig = [0u8; 64];
 
     assert_eq!(pub_key.len(), 32);
     assert_eq!(pri_key.len(), 32);
     assert_eq!(sig.len(), 64);
 
-    assert!(CRYPTO.ver_ed25519(&pub_key, &sig, &data).unwrap());
-    assert!(!CRYPTO.ver_ed25519(&pub_key, &sig, &fake_data).unwrap());
-    assert!(!CRYPTO.ver_ed25519(&pub_key, &fake_sig, &data).unwrap());
+    assert!(CRYPTO.ver_ed25519(&pub_key, &sig, &data).await.unwrap());
+    assert!(!CRYPTO.ver_ed25519(&pub_key, &sig, &fake_data).await.unwrap());
+    assert!(!CRYPTO.ver_ed25519(&pub_key, &fake_sig, &data).await.unwrap());
 }
 
 #[test]

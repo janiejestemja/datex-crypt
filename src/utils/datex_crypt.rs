@@ -1,3 +1,4 @@
+use std::pin::Pin;
 use super::crypto::{CryptoError, CryptoTrait};
 use openssl::{
     derive::Deriver,
@@ -190,7 +191,9 @@ impl CryptoTrait for CryptoNative {
             .map_err(|_| CryptoError::DecryptionError)
     }
     // EdDSA keygen
-    fn gen_ed25519(&self) -> Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError> {
+    fn gen_ed25519(&self) -> 
+        Pin<Box<dyn Future<Output = Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError>> +'static>> {
+        Box::pin(async move {
         let key = PKey::generate_ed25519()
             .map_err(|_| CryptoError::KeyGeneratorFailed)?;
             
@@ -203,32 +206,41 @@ impl CryptoTrait for CryptoNative {
             .try_into()
             .map_err(|_| CryptoError::KeyGeneratorFailed)?;
         Ok((public_key, private_key))
+        })
     }
 
     // EdDSA signature
-    fn sig_ed25519(&self, pri_key: &[u8; KEY_LEN], digest: &Vec<u8>) -> Result<Vec<u8>, CryptoError> {
-        let sig_key = PKey::private_key_from_raw_bytes(pri_key, Id::ED25519)
-            .map_err(|_| CryptoError::KeyImportFailed)?;
+    fn sig_ed25519<'a>(
+        &'a self, 
+        pri_key: &'a [u8; KEY_LEN], 
+        digest: &'a Vec<u8>
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, CryptoError>> + Send + 'a>> {
 
-        let mut signer = Signer::new_without_digest(&sig_key)
-            .map_err(|_| CryptoError::SigningError)?;
-        let signature = signer.sign_oneshot_to_vec(digest)
-            .map_err(|_| CryptoError::SigningError)?;
-        Ok(signature)
+        Box::pin(async move {
+            let sig_key = PKey::private_key_from_raw_bytes(pri_key, Id::ED25519)
+                .map_err(|_| CryptoError::KeyImportFailed)?;
+            let mut signer = Signer::new_without_digest(&sig_key)
+                .map_err(|_| CryptoError::SigningError)?;
+            let signature = signer.sign_oneshot_to_vec(digest)
+                .map_err(|_| CryptoError::SigningError)?;
+            Ok(signature)
+        })
     }
 
     // EdDSA verification of signature
-    fn ver_ed25519(
-        &self,
-        pub_key: &[u8; KEY_LEN],
-        sig: &[u8; SIG_LEN],
-        data: &Vec<u8>,
-    ) -> Result<bool, CryptoError> {
-        let public_key = PKey::public_key_from_raw_bytes(pub_key, Id::ED25519)
-            .map_err(|_| CryptoError::KeyImportFailed)?;
-        let mut verifier = Verifier::new_without_digest(&public_key)
-            .map_err(|_| CryptoError::KeyImportFailed)?;
-        Ok(verifier.verify_oneshot(sig, &data)
-            .map_err(|_| CryptoError::VerificationError)?)
+    fn ver_ed25519<'a>(
+        &'a self,
+        pub_key: &'a [u8; KEY_LEN],
+        sig: &'a [u8; SIG_LEN],
+        data: &'a Vec<u8>,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, CryptoError>> + Send + 'a>> {
+        Box::pin(async move {
+            let public_key = PKey::public_key_from_raw_bytes(pub_key, Id::ED25519)
+                .map_err(|_| CryptoError::KeyImportFailed)?;
+            let mut verifier = Verifier::new_without_digest(&public_key)
+                .map_err(|_| CryptoError::KeyImportFailed)?;
+            Ok(verifier.verify_oneshot(sig, &data)
+                .map_err(|_| CryptoError::VerificationError)?)
+        })
     }
 }

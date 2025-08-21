@@ -1,3 +1,4 @@
+use std::pin::Pin;
 use crate::utils::datex_crypt::{
     KEY_LEN,
     SIG_LEN,
@@ -23,20 +24,20 @@ pub trait CryptoTrait {
     ) -> Result<Vec<u8>, CryptoError>;
 
     // EdDSA
-    fn gen_ed25519(&self) -> Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError>;
+    fn gen_ed25519(&self) -> Pin<Box<dyn Future<Output = Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError>> + 'static>>;
 
-    fn sig_ed25519(
-        &self,
-        pri_key: &[u8; KEY_LEN], 
-        digest: &Vec<u8>
-    ) -> Result<Vec<u8>, CryptoError>;
+    fn sig_ed25519<'a>(
+        &'a self,
+        pri_key: &'a [u8; KEY_LEN], 
+        digest: &'a Vec<u8>
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, CryptoError>> + Send + 'a>>;
 
-    fn ver_ed25519(
-        &self,
-        pub_key: &[u8; KEY_LEN],
-        sig: &[u8; SIG_LEN],
-        data: &Vec<u8>,
-    ) -> Result<bool, CryptoError>;
+    fn ver_ed25519<'a>(
+        &'a self,
+        pub_key: &'a [u8; KEY_LEN],
+        sig: &'a [u8; SIG_LEN],
+        data: &'a Vec<u8>,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, CryptoError>> + Send + 'a>>;
 
 }
 
