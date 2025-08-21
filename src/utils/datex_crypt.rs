@@ -129,10 +129,12 @@ impl CryptoTrait for CryptoNative {
             .map_err(|_| CryptoError::KeyGeneratorFailed)?;
         let public_key: [u8; KEY_LEN] = key.raw_public_key()
             .map_err(|_| CryptoError::KeyGeneratorFailed)?
-            .try_into().unwrap();
+            .try_into()
+            .map_err(|_| CryptoError::KeyGeneratorFailed)?;
         let private_key: [u8; KEY_LEN] = key.raw_private_key()
             .map_err(|_| CryptoError::KeyGeneratorFailed)?
-            .try_into().unwrap();
+            .try_into()
+            .map_err(|_| CryptoError::KeyGeneratorFailed)?;
         Ok((public_key, private_key))
     }
 
@@ -153,7 +155,8 @@ impl CryptoTrait for CryptoNative {
         rand_bytes(&mut salt) // random salt?
             .map_err(|_| CryptoError::KeyDerivationFailed)?;
         let key: [u8; KEY_LEN] = hkdf(&shared, &salt, &INFO, KEY_LEN)?
-            .try_into().unwrap();
+            .try_into()
+            .map_err(|_| CryptoError::KeyDerivationFailed)?;
 
         // Nonce for AES
         let mut iv = [0u8; IV_LEN];
@@ -181,9 +184,10 @@ impl CryptoTrait for CryptoNative {
         let shared = derive_x25519(rec_pri_raw, &msg.pub_key)?;
         let key: [u8; KEY_LEN] = hkdf(&shared, &msg.salt, &INFO, KEY_LEN)?
             .try_into()
-            .unwrap();
+            .map_err(|_| CryptoError::DecryptionError)?;
 
         aes_gcm_decrypt(&key, &msg.iv, aad, &msg.ct, &msg.tag)
+            .map_err(|_| CryptoError::DecryptionError)
     }
     // EdDSA keygen
     fn gen_ed25519(&self) -> Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError> {
@@ -192,16 +196,19 @@ impl CryptoTrait for CryptoNative {
             
         let public_key: [u8; KEY_LEN] = key.raw_public_key()
             .map_err(|_| CryptoError::KeyGeneratorFailed)?
-            .try_into().unwrap();
+            .try_into()
+            .map_err(|_| CryptoError::KeyGeneratorFailed)?;
         let private_key: [u8; KEY_LEN] = key.raw_private_key()
             .map_err(|_| CryptoError::KeyGeneratorFailed)?
-            .try_into().unwrap();
+            .try_into()
+            .map_err(|_| CryptoError::KeyGeneratorFailed)?;
         Ok((public_key, private_key))
     }
 
     // EdDSA signature
     fn sig_ed25519(&self, pri_key: &[u8; KEY_LEN], digest: &Vec<u8>) -> Result<Vec<u8>, CryptoError> {
-        let sig_key = PKey::private_key_from_raw_bytes(pri_key, Id::ED25519).unwrap();
+        let sig_key = PKey::private_key_from_raw_bytes(pri_key, Id::ED25519)
+            .map_err(|_| CryptoError::KeyImportFailed)?;
 
         let mut signer = Signer::new_without_digest(&sig_key)
             .map_err(|_| CryptoError::SigningError)?;
