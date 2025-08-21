@@ -3,7 +3,6 @@ use crate::utils::datex_crypt::{
     SIG_LEN,
     Crypt,
 };
-use openssl::error::ErrorStack;
 
 pub trait CryptoTrait {
     // ECIES
@@ -24,20 +23,20 @@ pub trait CryptoTrait {
     ) -> Result<Vec<u8>, CryptoError>;
 
     // EdDSA
-    fn gen_ed25519(&self) -> Result<([u8; KEY_LEN], [u8; KEY_LEN]), ErrorStack>;
+    fn gen_ed25519(&self) -> Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError>;
 
     fn sig_ed25519(
         &self,
         pri_key: &[u8; KEY_LEN], 
         digest: &Vec<u8>
-    ) -> Result<Vec<u8>, ErrorStack>;
+    ) -> Result<Vec<u8>, CryptoError>;
 
     fn ver_ed25519(
         &self,
         pub_key: &[u8; KEY_LEN],
         sig: &[u8; SIG_LEN],
         data: &Vec<u8>,
-    ) -> Result<bool, ErrorStack>;
+    ) -> Result<bool, CryptoError>;
 
 }
 
