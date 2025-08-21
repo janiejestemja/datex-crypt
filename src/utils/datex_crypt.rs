@@ -128,28 +128,32 @@ pub fn aes_gcm_decrypt(
 pub struct CryptoNative;
 impl CryptoTrait for CryptoNative {
     // Generate encryption keypair
-    fn gen_x25519(&self) -> Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError> {
-        let key = PKey::generate_x25519().map_err(|_| CryptoError::KeyGeneratorFailed)?;
-        let public_key: [u8; KEY_LEN] = key
-            .raw_public_key()
-            .map_err(|_| CryptoError::KeyGeneratorFailed)?
-            .try_into()
-            .map_err(|_| CryptoError::KeyGeneratorFailed)?;
-        let private_key: [u8; KEY_LEN] = key
-            .raw_private_key()
-            .map_err(|_| CryptoError::KeyGeneratorFailed)?
-            .try_into()
-            .map_err(|_| CryptoError::KeyGeneratorFailed)?;
-        Ok((public_key, private_key))
+    fn gen_x25519(
+        &self,
+    ) -> Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError> {
+    // ) -> Pin<Box<dyn Future<Output = Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError>> + 'static>>
+            let key = PKey::generate_x25519().map_err(|_| CryptoError::KeyGeneratorFailed)?;
+            let public_key: [u8; KEY_LEN] = key
+                .raw_public_key()
+                .map_err(|_| CryptoError::KeyGeneratorFailed)?
+                .try_into()
+                .map_err(|_| CryptoError::KeyGeneratorFailed)?;
+            let private_key: [u8; KEY_LEN] = key
+                .raw_private_key()
+                .map_err(|_| CryptoError::KeyGeneratorFailed)?
+                .try_into()
+                .map_err(|_| CryptoError::KeyGeneratorFailed)?;
+            Ok((public_key, private_key))
     }
 
     // Asymmetric encryption
-    fn ecies_encrypt(
-        &self,
-        rec_pub_raw: &[u8; KEY_LEN],
-        plaintext: &[u8],
-        aad: &[u8],
-    ) -> Result<Crypt, CryptoError> {
+    fn ecies_encrypt<'a>(
+        &'a self,
+        rec_pub_raw: &'a [u8; KEY_LEN],
+        plaintext: &'a [u8],
+        aad: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<Crypt, CryptoError>> + Send + 'a>> {
+        Box::pin(async move {
         let (eph_pub, eph_pri) = self
             .gen_x25519()
             .map_err(|_| CryptoError::KeyGeneratorFailed)?;
@@ -178,14 +182,18 @@ impl CryptoTrait for CryptoNative {
             ct: ct,
             tag: tag,
         })
+        })
     }
     // Asymmetric decryption
-    fn ecies_decrypt(
-        &self,
-        rec_pri_raw: &[u8; KEY_LEN],
-        msg: &Crypt,
-        aad: &[u8],
-    ) -> Result<Vec<u8>, CryptoError> {
+
+    fn ecies_decrypt<'a>(
+        &'a self,
+        rec_pri_raw: &'a [u8; KEY_LEN],
+        msg: &'a Crypt,
+        aad: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, CryptoError>> + Send + 'a>>
+    {
+        Box::pin(async move {
         let shared = derive_x25519(rec_pri_raw, &msg.pub_key)?;
         let key: [u8; KEY_LEN] = hkdf(&shared, &msg.salt, &INFO, KEY_LEN)?
             .try_into()
@@ -193,6 +201,7 @@ impl CryptoTrait for CryptoNative {
 
         aes_gcm_decrypt(&key, &msg.iv, aad, &msg.ct, &msg.tag)
             .map_err(|_| CryptoError::DecryptionError)
+        })
     }
     // EdDSA keygen
     fn gen_ed25519(

@@ -3,21 +3,22 @@ use std::pin::Pin;
 
 pub trait CryptoTrait {
     // ECIES
-    fn gen_x25519(&self) -> Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError>;
+    fn gen_x25519(
+        &self
+    ) -> Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError>;
+    fn ecies_encrypt<'a>(
+        &'a self,
+        rec_pub_raw: &'a [u8; KEY_LEN],
+        plaintext: &'a [u8],
+        aad: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<Crypt, CryptoError>> + Send + 'a>>;
 
-    fn ecies_encrypt(
-        &self,
-        rec_pub_raw: &[u8; KEY_LEN],
-        plaintext: &[u8],
-        aad: &[u8],
-    ) -> Result<Crypt, CryptoError>;
-
-    fn ecies_decrypt(
-        &self,
-        rec_pri_raw: &[u8; KEY_LEN],
-        msg: &Crypt,
-        aad: &[u8],
-    ) -> Result<Vec<u8>, CryptoError>;
+    fn ecies_decrypt<'a>(
+        &'a self,
+        rec_pri_raw: &'a [u8; KEY_LEN],
+        msg: &'a Crypt,
+        aad: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<u8>, CryptoError>> + Send + 'a>>;
 
     // EdDSA
     fn gen_ed25519(

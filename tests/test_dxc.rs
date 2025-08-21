@@ -76,14 +76,14 @@ fn aes_gcm_roundtrip() {
     assert_eq!(data, deciphered.to_vec());
 }
 
-#[test]
-fn ecies_roundtrip() {
+#[tokio::test]
+async fn ecies_roundtrip() {
     static CRYPTO: CryptoNative = CryptoNative {};
     const INFO: &[u8] = b"ECIES|X25519|HKDF-SHA256|AES-256-GCM";
     let data = b"Some message to encrypt".to_vec();
     let (rec_pub_key, rec_pri_key) = CRYPTO.gen_x25519().unwrap();
-    let ciphered = CRYPTO.ecies_encrypt(&rec_pub_key, &data, INFO).unwrap();
-    let deciphered = CRYPTO.ecies_decrypt(&rec_pri_key, &ciphered, INFO).unwrap();
+    let ciphered = CRYPTO.ecies_encrypt(&rec_pub_key, &data, INFO).await.unwrap();
+    let deciphered = CRYPTO.ecies_decrypt(&rec_pri_key, &ciphered, INFO).await.unwrap();
 
     assert_eq!(data, deciphered);
 }
