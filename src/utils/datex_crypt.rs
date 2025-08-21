@@ -32,31 +32,56 @@ pub struct Crypt {
     pub tag: [u8; TAG_LEN],
 }
 
-// HKDF
-pub fn hkdf(ikm: &[u8], salt: &[u8], info: &[u8], out_len: usize) -> Result<Vec<u8>, ErrorStack> {
-    let mut ctx = PkeyCtx::new_id(Id::HKDF)?;
-    ctx.derive_init()?;
-    ctx.set_hkdf_mode(HkdfMode::EXTRACT_THEN_EXPAND)?;
-    ctx.set_hkdf_md(&Md::sha256())?;
-    ctx.set_hkdf_salt(salt)?;
-    ctx.set_hkdf_key(ikm)?;
-    ctx.add_hkdf_info(info)?;
+// HKDF (hash)
+pub fn hkdf(ikm: &[u8], salt: &[u8], info: &[u8], out_len: usize) -> Result<Vec<u8>, CryptoError> {
+    let mut ctx = PkeyCtx::new_id(Id::HKDF)
+        .map_err(|_| CryptoError::KeyDerivationFailed)
+        .unwrap();
+    ctx.derive_init()
+        .map_err(|_| CryptoError::KeyDerivationFailed)
+        .unwrap();
+    ctx.set_hkdf_mode(HkdfMode::EXTRACT_THEN_EXPAND)
+        .map_err(|_| CryptoError::KeyDerivationFailed)
+        .unwrap();
+    ctx.set_hkdf_md(&Md::sha256())
+        .map_err(|_| CryptoError::KeyDerivationFailed)
+        .unwrap();
+    ctx.set_hkdf_salt(salt)
+        .map_err(|_| CryptoError::KeyDerivationFailed)
+        .unwrap();
+    ctx.set_hkdf_key(ikm)
+        .map_err(|_| CryptoError::KeyDerivationFailed)
+        .unwrap();
+    ctx.add_hkdf_info(info)
+        .map_err(|_| CryptoError::KeyDerivationFailed)
+        .unwrap();
     let mut okm = vec![0u8; out_len];
-    ctx.derive(Some(&mut okm))?;
+    ctx.derive(Some(&mut okm))
+        .map_err(|_| CryptoError::KeyDerivationFailed)
+        .unwrap();
     Ok(okm)
 }
 
-// XDH
+// Derive shared secret on x255109
 pub fn derive_x25519(
     my_raw: &[u8; KEY_LEN],
     peer_pub: &[u8; KEY_LEN],
-) -> Result<Vec<u8>, ErrorStack> {
-    let peer_pub = PKey::public_key_from_raw_bytes(peer_pub, Id::X25519).unwrap();
-    let my_priv = PKey::private_key_from_raw_bytes(my_raw, Id::X25519).unwrap();
+) -> Result<Vec<u8>, CryptoError> {
+    let peer_pub = PKey::public_key_from_raw_bytes(peer_pub, Id::X25519)
+        .map_err(|_| CryptoError::KeyImportFailed)
+        .unwrap();
+    let my_priv = PKey::private_key_from_raw_bytes(my_raw, Id::X25519)
+        .map_err(|_| CryptoError::KeyImportFailed)
+        .unwrap();
 
-    let mut deriver = Deriver::new(&my_priv)?;
-    deriver.set_peer(&peer_pub)?;
+    let mut deriver = Deriver::new(&my_priv)
+        .map_err(|_| CryptoError::KeyDerivationFailed)
+        .unwrap();
+    deriver.set_peer(&peer_pub)
+        .map_err(|_| CryptoError::KeyDerivationFailed)
+        .unwrap();
     deriver.derive_to_vec()
+        .map_err(|_| CryptoError::KeyDerivationFailed)
 }
 
 // AES GCM
@@ -65,18 +90,27 @@ pub fn aes_gcm_encrypt(
     iv: &[u8; IV_LEN],
     aad: &[u8],
     plaintext: &[u8],
-) -> Result<(Vec<u8>, [u8; TAG_LEN]), ErrorStack> {
+) -> Result<(Vec<u8>, [u8; TAG_LEN]), CryptoError> {
     let cipher = Cipher::aes_256_gcm();
-    let mut enc = Crypter::new(cipher, Mode::Encrypt, key, Some(iv))?;
-    enc.aad_update(aad)?;
+    let mut enc = Crypter::new(cipher, Mode::Encrypt, key, Some(iv))
+        .map_err(|_| CryptoError::EncryptionError)
+        .unwrap();
+    enc.aad_update(aad)
+        .map_err(|_| CryptoError::EncryptionError)
+        .unwrap();
 
     let mut out = vec![0u8; plaintext.len() + cipher.block_size()];
-    let mut count = enc.update(plaintext, &mut out)?;
-    count += enc.finalize(&mut out[count..])?;
+    let mut count = enc.update(plaintext, &mut out)
+        .map_err(|_| CryptoError::EncryptionError)
+        .unwrap();
+    count += enc.finalize(&mut out[count..])
+        .map_err(|_| CryptoError::EncryptionError)
+        .unwrap();
     out.truncate(count);
 
     let mut tag = [0u8; TAG_LEN];
-    enc.get_tag(&mut tag)?;
+    enc.get_tag(&mut tag)
+        .map_err(|_| CryptoError::EncryptionError);
     Ok((out, tag))
 }
 
@@ -86,39 +120,62 @@ pub fn aes_gcm_decrypt(
     aad: &[u8],
     ciphertext: &[u8],
     tag: &[u8; TAG_LEN],
-) -> Result<Vec<u8>, ErrorStack> {
+) -> Result<Vec<u8>, CryptoError> {
     let cipher = Cipher::aes_256_gcm();
-    let mut dec = Crypter::new(cipher, Mode::Decrypt, key, Some(iv))?;
-    dec.aad_update(aad)?;
-    dec.set_tag(tag)?;
+    let mut dec = Crypter::new(cipher, Mode::Decrypt, key, Some(iv))
+        .map_err(|_| CryptoError::DecryptionError)
+        .unwrap();
+    dec.aad_update(aad)
+        .map_err(|_| CryptoError::DecryptionError);
+    dec.set_tag(tag)
+        .map_err(|_| CryptoError::DecryptionError);
 
     let mut out = vec![0u8; ciphertext.len() + cipher.block_size()];
-    let mut count = dec.update(ciphertext, &mut out)?;
-    count += dec.finalize(&mut out[count..])?;
+    let mut count = dec.update(ciphertext, &mut out)
+        .map_err(|_| CryptoError::DecryptionError)
+        .unwrap();
+    count += dec.finalize(&mut out[count..])
+        .map_err(|_| CryptoError::DecryptionError)
+        .unwrap();
     out.truncate(count);
     Ok(out)
 }
 
 pub struct CryptoNative;
 impl CryptoTrait for CryptoNative {
-    fn gen_x25519(&self) -> Result<([u8; KEY_LEN], [u8; KEY_LEN]), ErrorStack> {
-        let key = PKey::generate_x25519().unwrap();
-        let public_key: [u8; KEY_LEN] = key.raw_public_key().unwrap().try_into().unwrap();
-        let private_key: [u8; KEY_LEN] = key.raw_private_key().unwrap().try_into().unwrap();
+    // Generate encryption keypair
+    fn gen_x25519(&self) -> Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError> {
+        let key = PKey::generate_x25519()
+            .map_err(|_| CryptoError::KeyGeneratorFailed)
+            .unwrap();
+        let public_key: [u8; KEY_LEN] = key.raw_public_key()
+            .map_err(|_| CryptoError::KeyGeneratorFailed)
+            .unwrap().try_into().unwrap();
+        let private_key: [u8; KEY_LEN] = key.raw_private_key()
+            .map_err(|_| CryptoError::KeyGeneratorFailed)
+            .unwrap().try_into().unwrap();
         Ok((public_key, private_key))
     }
+
+    // Asymmetric encryption
     fn ecies_encrypt(
         &self,
         rec_pub_raw: &[u8; KEY_LEN],
         plaintext: &[u8],
         aad: &[u8],
-    ) -> Result<Crypt, ErrorStack> {
-        let (eph_pub, eph_pri) = self.gen_x25519()?;
-        let shared = derive_x25519(&eph_pri, rec_pub_raw)?;
+    ) -> Result<Crypt, CryptoError> {
+        let (eph_pub, eph_pri) = self.gen_x25519()
+            .map_err(|_| CryptoError::KeyGeneratorFailed)
+            .unwrap();
+        let shared = derive_x25519(&eph_pri, rec_pub_raw)
+            .map_err(|_| CryptoError::KeyDerivationFailed)
+            .unwrap();
 
         // Map ikm to okm
         let mut salt = [0u8; SALT_LEN];
-        rand_bytes(&mut salt)?; // random salt?
+        rand_bytes(&mut salt) // random salt?
+            .map_err(|_| CryptoError::KeyDerivationFailed)
+            .unwrap();
         let key: [u8; KEY_LEN] = hkdf(&shared, &salt, &INFO, KEY_LEN)
             .unwrap()
             .try_into()
@@ -139,13 +196,13 @@ impl CryptoTrait for CryptoNative {
             tag: tag,
         })
     }
-    // Recipient
+    // Asymmetric decryption
     fn ecies_decrypt(
         &self,
         rec_pri_raw: &[u8; KEY_LEN],
         msg: &Crypt,
         aad: &[u8],
-    ) -> Result<Vec<u8>, ErrorStack> {
+    ) -> Result<Vec<u8>, CryptoError> {
         let shared = derive_x25519(rec_pri_raw, &msg.pub_key)?;
         let key: [u8; KEY_LEN] = hkdf(&shared, &msg.salt, &INFO, KEY_LEN)
             .unwrap()
@@ -154,7 +211,7 @@ impl CryptoTrait for CryptoNative {
 
         aes_gcm_decrypt(&key, &msg.iv, aad, &msg.ct, &msg.tag)
     }
-    // EdDSA
+    // EdDSA keygen
     fn gen_ed25519(&self) -> Result<([u8; KEY_LEN], [u8; KEY_LEN]), ErrorStack> {
         let key = PKey::generate_ed25519()?;
         let public_key = key.raw_public_key().unwrap().try_into().unwrap();
@@ -162,6 +219,7 @@ impl CryptoTrait for CryptoNative {
         Ok((public_key, private_key))
     }
 
+    // EdDSA signature
     fn sig_ed25519(&self, pri_key: &[u8; KEY_LEN], digest: &Vec<u8>) -> Result<Vec<u8>, ErrorStack> {
         let sig_key = PKey::private_key_from_raw_bytes(pri_key, Id::ED25519).unwrap();
 
@@ -170,6 +228,7 @@ impl CryptoTrait for CryptoNative {
         Ok(signature)
     }
 
+    // EdDSA verification of signature
     fn ver_ed25519(
         &self,
         pub_key: &[u8; KEY_LEN],
