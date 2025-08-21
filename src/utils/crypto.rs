@@ -3,9 +3,7 @@ use std::pin::Pin;
 
 pub trait CryptoTrait {
     // ECIES
-    fn gen_x25519(
-        &self
-    ) -> Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError>;
+    fn gen_x25519(&self) -> Result<([u8; KEY_LEN], [u8; KEY_LEN]), CryptoError>;
     fn ecies_encrypt<'a>(
         &'a self,
         rec_pub_raw: &'a [u8; KEY_LEN],
