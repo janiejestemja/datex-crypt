@@ -110,7 +110,8 @@ pub fn aes_gcm_encrypt(
 
     let mut tag = [0u8; TAG_LEN];
     enc.get_tag(&mut tag)
-        .map_err(|_| CryptoError::EncryptionError);
+        .map_err(|_| CryptoError::EncryptionError)
+        .unwrap();
     Ok((out, tag))
 }
 
@@ -126,9 +127,11 @@ pub fn aes_gcm_decrypt(
         .map_err(|_| CryptoError::DecryptionError)
         .unwrap();
     dec.aad_update(aad)
-        .map_err(|_| CryptoError::DecryptionError);
+        .map_err(|_| CryptoError::DecryptionError)
+        .unwrap();
     dec.set_tag(tag)
-        .map_err(|_| CryptoError::DecryptionError);
+        .map_err(|_| CryptoError::DecryptionError)
+        .unwrap();
 
     let mut out = vec![0u8; ciphertext.len() + cipher.block_size()];
     let mut count = dec.update(ciphertext, &mut out)

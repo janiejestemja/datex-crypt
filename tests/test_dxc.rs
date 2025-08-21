@@ -42,7 +42,6 @@ fn dh_x25519() {
 
 #[test]
 fn test_hkdf() {
-    static CRYPTO: CryptoNative = CryptoNative {};
     const INFO: &[u8] = b"ECIES|X25519|HKDF-SHA256|AES-256-GCM";
     let ikm = vec![0u8; 32];
     let salt = vec![0u8; 16];
