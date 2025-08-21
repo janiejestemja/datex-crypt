@@ -1,28 +1,37 @@
-use datex_crypt::utils::datex_crypt::*;
+use datex_crypt::utils::datex_crypt::CryptoNative;
+use datex_crypt::utils::datex_crypt::{
+    aes_gcm_encrypt,
+    aes_gcm_decrypt,
+    derive_x25519,
+    hkdf
+};
+use datex_crypt::utils::crypto::CryptoTrait;
 
 #[test]
 fn dsa_ed2519() {
+    static CRYPTO: CryptoNative = CryptoNative {};
     let data = b"Some message to sign".to_vec();
     let fake_data = b"Some other message to sign".to_vec();
 
-    let (pub_key, pri_key) = gen_ed25519().unwrap();
+    let (pub_key, pri_key) = CRYPTO.gen_ed25519().unwrap();
 
-    let sig: [u8; 64] = sig_ed25519(&pri_key, &data).unwrap().try_into().unwrap();
+    let sig: [u8; 64] = CRYPTO.sig_ed25519(&pri_key, &data).unwrap().try_into().unwrap();
     let fake_sig = [0u8; 64];
 
     assert_eq!(pub_key.len(), 32);
     assert_eq!(pri_key.len(), 32);
     assert_eq!(sig.len(), 64);
 
-    assert!(ver_ed25519(&pub_key, &sig, &data).unwrap());
-    assert!(!ver_ed25519(&pub_key, &sig, &fake_data).unwrap());
-    assert!(!ver_ed25519(&pub_key, &fake_sig, &data).unwrap());
+    assert!(CRYPTO.ver_ed25519(&pub_key, &sig, &data).unwrap());
+    assert!(!CRYPTO.ver_ed25519(&pub_key, &sig, &fake_data).unwrap());
+    assert!(!CRYPTO.ver_ed25519(&pub_key, &fake_sig, &data).unwrap());
 }
 
 #[test]
 fn dh_x25519() {
-    let (ser_pub, ser_pri) = gen_x25519().unwrap();
-    let (cli_pub, cli_pri) = gen_x25519().unwrap();
+    static CRYPTO: CryptoNative = CryptoNative {};
+    let (ser_pub, ser_pri) = CRYPTO.gen_x25519().unwrap();
+    let (cli_pub, cli_pri) = CRYPTO.gen_x25519().unwrap();
 
     let cli_shared = derive_x25519(&cli_pri, &ser_pub).unwrap();
     let ser_shared = derive_x25519(&ser_pri, &cli_pub).unwrap();
@@ -33,6 +42,7 @@ fn dh_x25519() {
 
 #[test]
 fn test_hkdf() {
+    static CRYPTO: CryptoNative = CryptoNative {};
     const INFO: &[u8] = b"ECIES|X25519|HKDF-SHA256|AES-256-GCM";
     let ikm = vec![0u8; 32];
     let salt = vec![0u8; 16];
@@ -59,11 +69,12 @@ fn aes_gcm_roundtrip() {
 
 #[test]
 fn ecies_roundtrip() {
+    static CRYPTO: CryptoNative = CryptoNative {};
     const INFO: &[u8] = b"ECIES|X25519|HKDF-SHA256|AES-256-GCM";
     let data = b"Some message to encrypt".to_vec();
-    let (rec_pub_key, rec_pri_key) = gen_x25519().unwrap();
-    let ciphered = ecies_encrypt(&rec_pub_key, &data, INFO).unwrap();
-    let deciphered = ecies_decrypt(&rec_pri_key, &ciphered, INFO).unwrap();
+    let (rec_pub_key, rec_pri_key) = CRYPTO.gen_x25519().unwrap();
+    let ciphered = CRYPTO.ecies_encrypt(&rec_pub_key, &data, INFO).unwrap();
+    let deciphered = CRYPTO.ecies_decrypt(&rec_pri_key, &ciphered, INFO).unwrap();
 
     assert_eq!(data, deciphered);
 }
