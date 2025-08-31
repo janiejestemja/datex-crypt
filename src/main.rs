@@ -1,8 +1,11 @@
 use datex_crypt::utils::datex_crypt::{
     hkdf, aes_gcm_decrypt, IV_LEN
 };
+use datex_crypt::utils::ecdsa::{
+    gen_ed25519, ver_ed25519, sig_ed25519
+};
 
-fn main() {
+fn old_main() {
     const INFO: &[u8] = b"ECIES|X25519|HKDF-SHA256|AES-256-GCM";
     let ikm = vec![0u8; 32];
     let salt = vec![0u8; 16];
@@ -25,4 +28,12 @@ fn main() {
 
     assert_eq!(test_case, deciphered);
 
+}
+
+fn main() {
+    let (pub_key, pri_key) = gen_ed25519().unwrap();
+    println!("{:?}", pub_key);
+    println!("{:?}", pub_key.len());
+    println!("{:?}", pri_key);
+    println!("{:?}", pri_key.len());
 }
