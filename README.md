@@ -2,13 +2,13 @@
 ---
 
 Notation 
-- msg = message to encrypt
-- k_msg = ephemeral symmetric key for this message
-- ek_i = ephemeral key for recipient `i`
-- pk_i, sk_i = long-term public/private key of recipient `i`
-- wrap(k_msg, ss) = key wrap using shared secret `ss`
-- enc(k_msg, msg) = symmetric encryption of message with `k_msg` 
-- dh(pri, pub) = (ec) diffie-hellman operation
+- `msg` = message to encrypt
+- `k_msg` = ephemeral symmetric key for this message
+- `ek_i` = ephemeral key for recipient `i`
+- `pk_i`, `sk_i` = long-term public/private key of recipient `i`
+- `wrap(k_msg, ss)` = key wrap using shared secret `ss`
+- `enc(k_msg, msg)`= symmetric encryption of message with `k_msg` 
+- `dh(pri, pub)` = (ec) diffie-hellman operation
 
 **Sender**
 1. Generate ephemeral symmetric key `k_msg` 
