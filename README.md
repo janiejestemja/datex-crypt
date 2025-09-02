@@ -17,7 +17,7 @@ k_msg <- random key (128/256 bits)
 ```
 2. encrypt msg
 ```
-C <- enc(k_msg, msg)
+cipher <- enc(k_msg, msg)
 ```
 3. For each recipient i:
 
