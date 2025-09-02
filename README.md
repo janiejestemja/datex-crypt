@@ -1,44 +1,72 @@
-# ECC
+# Protocol
 ---
-> *Elliptic Curve Cryptography*
 
-## Ciphersuite
----
-> *Replacement of RSA with ECC*
+Notation 
+- msg = message to encrypt
+- k_msg = ephemeral symmetric key for this message
+- ek_i = ephemeral key for recipient i
+- pk_i, sk_i = long term public/private key of recipient i
+- wrap(k_msg, ss) = key wrap (aes-kw) using shared secret ss
+- enc(k_msg, msg) = symmetric encryption of message with k_msg (aes-gcm)
+- dh(pri, pub) = (ec) diffie-hellman operation
 
-> [!Tip]
-> [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API)
->
-> [OpenSSL crate docs](https://docs.rs/openssl/latest/openssl/index.html)
+**Sender**
+1. generate eph symmetric key
+```
+k_msg <- random key (128/256 bits)
+```
+2. encrypt msg
+```
+C <- enc(k_msg, msg)
+```
+3. For each recipient i:
 
-### ECDSA
----
-> *Elliptic Curve Digital Signature Algorithm*
+  - 1. generate recipient specific ephemeral keypar
 
-#### Web Crypto API
-- [EcdsaParams](https://developer.mozilla.org/en-US/docs/Web/API/EcdsaParams)
+  ```
+  (ek_i_pri, ek_i_pub) <- ephemeral key pair
+  ```
 
-#### OpenSSL crate
-- [Signer/Verifier](https://docs.rs/openssl/latest/openssl/sign/struct.Signer.html)
-- Curve: [Nid::BRAINPOOL_P384R1](https://docs.rs/openssl/latest/openssl/nid/struct.Nid.html#associatedconstant.BRAINPOOL_P384R1)
-- Hash: [MessageDigest::sha256](https://docs.rs/openssl/latest/openssl/hash/struct.MessageDigest.html#method.sha256)
+  - 2. Deriva a shared secred with recipients long term public key
+  ```
+  ss_i <- dh(ek_i_pri, pk_i)
+  ```
 
-> [!Note]
-> Signature and verification.
+  - 3. Wrap the message key k_msg with the shared secret
+  ```
+  WrappedKey_i <- wrap(k_msg, ss_i)
+  ```
 
-### ECIEC
----
-> *Elliptic Curve Integrated Encryption Scheme*
+  - 4. Prepaire payload
+  ```
+  (ek_i_pub, WrappedKey_i, cipher)
+  ```
 
-#### Web Crypto API
-- [EcdhKeyDeriveParams](https://developer.mozilla.org/en-US/docs/Web/API/EcdhKeyDeriveParams)
-- [HkdfParams](https://developer.mozilla.org/en-US/docs/Web/API/HkdfParams)
-- [AesGcmParams](https://developer.mozilla.org/en-US/docs/Web/API/AesGcmParams)
-  
-#### OpenSSL crate
-- [ECDH KD](https://docs.rs/openssl/latest/openssl/derive/index.html): [Nid::BRAINPOOL_P384R1](https://docs.rs/openssl/latest/openssl/nid/struct.Nid.html#associatedconstant.BRAINPOOL_P384R1)
-- [HKDF](https://docs.rs/openssl/latest/openssl/pkey_ctx/struct.HkdfMode.html): [&Md::sha256()](https://docs.rs/openssl/latest/openssl/md/struct.Md.html)
-- [AES-GCM](https://docs.rs/openssl/latest/openssl/symm/index.html): [Cipher::aes_256_gcm](https://docs.rs/openssl/latest/openssl/cipher/struct.Cipher.html#method.aes_256_gcm)
+4. Send each recpipient their payload
 
-> [!Note]
-> Hybrid Encryption.
+
+**Recipient i**
+1. recieve tuple 
+```
+(ek_i_pub, WrappedKey_i, cipher)
+```
+2. derive shared secret using long term private key
+```
+ss_i <- dh(sk_i, ek_i_pub)
+```
+3. Unwrap the message key
+```
+k_msg <- unwrap(WrappedKey_i, ss_i)
+```
+4. Decrypt the message
+```
+msg <- dec(k_msg, cipher)
+```
+
+**Properties**
+- Forward secrecy
+  - each recipients eph key is destroyed after use, thus compromise of the long-term private key later does not expose past messages
+- multi recipient
+  - each recipient gets a unique eph key + wrapped key, thus the message ciphertext is only encrypted once
+- no meta leak compromise
+  - only the fact thtat the same message was sent to multiple recipients might be inferred - keys remain secure
