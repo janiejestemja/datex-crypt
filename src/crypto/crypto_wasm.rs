@@ -1,16 +1,16 @@
 use super::crypto::{CryptoError, CryptoTrait, PRI_KEY_LEN, PUB_KEY_LEN, SIG_LEN};
 use std::pin::Pin;
 
-#[cfg(target_arch = "wasm32")]
+// #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
-#[cfg(target_arch = "wasm32")]
+// #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub struct Crypt {
-    name: String,
+    name: Vec<u8>,
 }
 
-#[cfg(target_arch = "wasm32")]
+// #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 impl Crypt {
     #[wasm_bindgen(constructor)]
@@ -22,22 +22,17 @@ impl Crypt {
     }
 }
 
-#[cfg(target_arch = "wasm32")]
+// #[cfg(target_arch = "wasm32")]
 impl CryptoTrait for Crypt {
     // EdDSA
-    fn gen_ed25519() -> Pin<
-        Box<
-            dyn Future<Output = Result<([u8; PRI_KEY_LEN], [u8; PUB_KEY_LEN]), CryptoError>>
-                + 'static,
-        >,
-    > {
+    fn gen_ed25519() -> Pin<Box<dyn Future<Output = Result<([u8; PRI_KEY_LEN], [u8; PUB_KEY_LEN]), CryptoError>> + 'static>> {
         todo!();
     }
 
     fn sig_ed25519<'a>(
         pri_key: &'a [u8; PRI_KEY_LEN],
         digest: &'a Vec<u8>,
-    ) -> Pin<Box<dyn Future<Output = Result<[u8; 64], CryptoError>> + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = Result<[u8; SIG_LEN], CryptoError>> + 'a>> {
         todo!();
     }
 
