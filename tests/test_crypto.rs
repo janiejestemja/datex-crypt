@@ -2,7 +2,7 @@ use datex_crypt::crypto::crypto::CryptoTrait;
 use datex_crypt::crypto::crypto_native::Crypt;
 
 #[tokio::test]
-async fn dsa_ed2519() {
+async fn test_dsa_ed2519() {
     let crystruct: Crypt = Crypt::new(b"RsCipher".to_vec());
     let data = b"Some message to sign".to_vec();
     let fake_data = b"Some other message to sign".to_vec();
@@ -32,4 +32,24 @@ async fn dsa_ed2519() {
             .await
             .unwrap()
     );
+}
+
+#[test]
+fn aes_ctr_roundtrip() {
+    let data = b"Some message to encrypt".to_vec();
+
+    let ikm = [0u8; 16];
+    let salt = [0u8; 16];
+    let iv = [0u8; 16];
+
+    let hash: [u8; 32] = Crypt::hkdf(&ikm, &salt)
+        .unwrap()
+        .try_into()
+        .unwrap();
+
+    let cipher = Crypt::aes_ctr_encrypt(&hash, &iv, &data).unwrap();
+    let plain = Crypt::aes_ctr_encrypt(&hash, &iv, &cipher).unwrap();
+
+    assert_ne!(data, cipher);
+    assert_eq!(plain, data);
 }

@@ -1,9 +1,12 @@
-use super::crypto::{CryptoError, CryptoTrait, PRI_KEY_LEN, PUB_KEY_LEN, SIG_LEN};
+use super::crypto::{CryptoError, CryptoTrait};
 use std::pin::Pin;
 
 use openssl::{
-    pkey::PKey,
+    md::Md,
+    pkey::{Id, PKey},
+    pkey_ctx::{HkdfMode, PkeyCtx},
     sign::{Signer, Verifier},
+    symm::{Cipher, Crypter, Mode},
 };
 
 pub struct Crypt {
@@ -65,7 +68,7 @@ impl CryptoTrait for Crypt {
     fn ver_ed25519<'a>(
         &self,
         pub_key: &'a Vec<u8>,
-        sig: &'a [u8; SIG_LEN],
+        sig: &'a [u8; 64],
         data: &'a Vec<u8>,
     ) -> Pin<Box<dyn Future<Output = Result<bool, CryptoError>> + 'a>> {
         Box::pin(async move {
@@ -77,5 +80,46 @@ impl CryptoTrait for Crypt {
                 .verify_oneshot(sig, &data)
                 .map_err(|_| CryptoError::VerificationError)?)
         })
+    }
+
+    // HKDF (hash)
+    fn hkdf(ikm: &[u8], salt: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        let mut ctx = PkeyCtx::new_id(Id::HKDF).map_err(|_| CryptoError::KeyDerivationFailed)?;
+        ctx.derive_init()
+            .map_err(|_| CryptoError::KeyDerivationFailed)?;
+        ctx.set_hkdf_mode(HkdfMode::EXTRACT_THEN_EXPAND)
+            .map_err(|_| CryptoError::KeyDerivationFailed)?;
+        ctx.set_hkdf_md(&Md::sha256())
+            .map_err(|_| CryptoError::KeyDerivationFailed)?;
+        ctx.set_hkdf_salt(salt)
+            .map_err(|_| CryptoError::KeyDerivationFailed)?;
+        ctx.set_hkdf_key(ikm)
+            .map_err(|_| CryptoError::KeyDerivationFailed)?;
+        /*
+        ctx.add_hkdf_info(info)
+            .map_err(|_| CryptoError::KeyDerivationFailed)?;
+        */
+        let mut okm = vec![0u8; 32];
+        ctx.derive(Some(&mut okm))
+            .map_err(|_| CryptoError::KeyDerivationFailed)?;
+        Ok(okm)
+    }
+
+    // AES CTR
+    fn aes_ctr_encrypt(
+        key: &[u8; 32],
+        iv: &[u8; 16],
+        plaintext: &[u8],
+    ) -> Result<Vec<u8>, CryptoError> {
+        let cipher = Cipher::aes_256_ctr();
+        let mut enc = Crypter::new(cipher, Mode::Encrypt, key, Some(iv))
+            .map_err(|_| CryptoError::EncryptionError)?;
+
+        let mut out = vec![0u8; plaintext.len()];
+        let count = enc
+            .update(plaintext, &mut out)
+            .map_err(|_| CryptoError::EncryptionError)?;
+        out.truncate(count);
+        Ok(out)
     }
 }
