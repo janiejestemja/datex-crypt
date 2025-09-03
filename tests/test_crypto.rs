@@ -67,12 +67,13 @@ fn test_dh_x25519() {
 }
 
 #[test]
-fn test_prot() {
-    let arand = Crypt::encrypt_payload()
+fn test_keywrapping() {
+    let kek_bytes = [1u8; 32];
+    let arand = Crypt::key_upwrap(&kek_bytes)
         .unwrap();
-    let brand = Crypt::decrypt_payload(&arand)
+    let brand = Crypt::key_unwrap(&kek_bytes, &arand)
         .unwrap();
 
-    assert_ne!(arand, brand);
+    assert_ne!(arand.to_vec(), brand.to_vec());
     assert_eq!(arand.len() , brand.len() + 8);
 }

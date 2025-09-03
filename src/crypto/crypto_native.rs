@@ -161,11 +161,11 @@ impl CryptoTrait for Crypt {
             .map_err(|_| CryptoError::KeyDerivationFailed)
     }
 
-    fn encrypt_payload(
-    ) -> Result<Vec<u8>, CryptoError> {
+    fn key_upwrap(
+        kek_bytes: &[u8; 32],
+    ) -> Result<[u8; 40], CryptoError> {
         // Key encryption key
-        let kek_bytes = [1u8; 32];
-        let kek = AesKey::new_encrypt(&kek_bytes).unwrap();
+        let kek = AesKey::new_encrypt(kek_bytes).unwrap();
 
         // IV
         let iv = [0u8; 8];
@@ -178,23 +178,23 @@ impl CryptoTrait for Crypt {
         let mut wrapped = [0u8; 40];
         let _length = wrap_key(&kek, Some(iv), &mut wrapped, &rb);
 
-        Ok(wrapped.to_vec())
+        Ok(wrapped)
     }
 
-    fn decrypt_payload(
-        cipher: &Vec<u8>,
-    ) -> Result<Vec<u8>, CryptoError> {
+    fn key_unwrap(
+        kek_bytes: &[u8; 32],
+        cipher: &[u8; 40],
+    ) -> Result<[u8; 32], CryptoError> {
         // Key encryption key
-        let kek_bytes = [1u8; 32];
-        let kek = AesKey::new_decrypt(&kek_bytes).unwrap();
+        let kek = AesKey::new_decrypt(kek_bytes).unwrap();
 
         // IV
         let iv = [0u8; 8];
 
         // Unwrap key 
         let mut unwrapped: [u8; 32] = [0u8; 32];
-        let _length = unwrap_key(&kek, Some(iv), &mut unwrapped, &cipher);
+        let _length = unwrap_key(&kek, Some(iv), &mut unwrapped, cipher);
 
-        Ok(unwrapped.to_vec())
+        Ok(unwrapped)
     }
 }

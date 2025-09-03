@@ -39,12 +39,14 @@ pub trait CryptoTrait {
         peer_pub: &[u8; 32],
     ) -> Result<Vec<u8>, CryptoError>;
 
-    fn encrypt_payload(
-    ) -> Result<Vec<u8>, CryptoError>;
+    fn key_upwrap(
+        kek_bytes: &[u8; 32],
+    ) -> Result<[u8; 40], CryptoError>;
 
-    fn decrypt_payload(
-        cipher: &Vec<u8>,
-    ) -> Result<Vec<u8>, CryptoError>;
+    fn key_unwrap(
+        kek_bytes: &[u8; 32],
+        cipher: &[u8; 40],
+    ) -> Result<[u8; 32], CryptoError>;
 }
 
 #[derive(Debug, Clone)]
