@@ -1,3 +1,9 @@
+use std::pin::Pin;
+use super::crypto::{
+    CryptoTrait, CryptoError,
+    PUB_KEY_LEN, PRI_KEY_LEN, SIG_LEN,
+};
+
 #[cfg(not(target_arch = "wasm32"))]
 pub struct Crypt {
     name: String,
@@ -13,13 +19,26 @@ impl Crypt {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#[cfg(not(target_arch = "wasm32"))]
+impl CryptoTrait for Crypt {
+    // EdDSA
+    fn gen_ed25519(
+    ) -> Pin<Box<dyn Future<Output = Result<([u8; PRI_KEY_LEN], [u8; PUB_KEY_LEN]), CryptoError>> + 'static>> {
+        todo!();
+    }
 
-    #[test]
-    fn it_works() {
-        let crypta = Crypt::new("RsCipher".to_string());
-        assert_eq!(crypta.name(), "RsCipher".to_string());
+    fn sig_ed25519<'a>(
+        pri_key: &'a [u8; PRI_KEY_LEN],
+        digest: &'a Vec<u8>,
+    ) -> Pin<Box<dyn Future<Output = Result<[u8; 64], CryptoError>> + 'a>> {
+        todo!();
+    }
+
+    fn ver_ed25519<'a>(
+        pub_key: &'a [u8; PUB_KEY_LEN],
+        sig: &'a [u8; SIG_LEN],
+        data: &'a Vec<u8>,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, CryptoError>> + 'a>> {
+        todo!();
     }
 }
