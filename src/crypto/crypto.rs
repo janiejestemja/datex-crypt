@@ -39,9 +39,12 @@ pub trait CryptoTrait {
         peer_pub: &[u8; 32],
     ) -> Result<Vec<u8>, CryptoError>;
 
+    fn sym_key_gen() -> Result<[u8; 32], CryptoError>;
+
     fn key_upwrap(
         kek_bytes: &[u8; 32],
-    ) -> Result<([u8; 40], [u8; 32]), CryptoError>;
+        rb: &[u8; 32],
+    ) -> Result<[u8; 40], CryptoError>;
 
     fn key_unwrap(
         kek_bytes: &[u8; 32],

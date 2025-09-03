@@ -139,7 +139,7 @@ impl CryptoTrait for Crypt {
             .map_err(|_| CryptoError::KeyGeneratorFailed)?
             .try_into()
             .map_err(|_| CryptoError::KeyGeneratorFailed)?;
-        Ok((public_key, private_key))
+        Ok((private_key, public_key))
     }
 
     // Derive shared secret on x255109
@@ -161,24 +161,28 @@ impl CryptoTrait for Crypt {
             .map_err(|_| CryptoError::KeyDerivationFailed)
     }
 
+    fn sym_key_gen() -> Result<[u8; 32], CryptoError> {
+        // Random key
+        let mut rb = [0u8; 32];
+        rand_bytes(&mut rb).map_err(|_| CryptoError::KeyDerivationFailed)?;
+        Ok(rb)
+    }
+
     fn key_upwrap(
         kek_bytes: &[u8; 32],
-    ) -> Result<([u8; 40], [u8; 32]), CryptoError> {
+        rb: &[u8; 32],
+    ) -> Result<[u8; 40], CryptoError> {
         // Key encryption key
         let kek = AesKey::new_encrypt(kek_bytes).unwrap();
 
         // IV
         let iv = [0u8; 8];
 
-        // Random key
-        let mut rb = [0u8; 32];
-        rand_bytes(&mut rb).map_err(|_| CryptoError::KeyDerivationFailed)?;
-
         // Key wrap
         let mut wrapped = [0u8; 40];
-        let _length = wrap_key(&kek, Some(iv), &mut wrapped, &rb);
+        let _length = wrap_key(&kek, Some(iv), &mut wrapped, rb);
 
-        Ok((wrapped, rb))
+        Ok(wrapped)
     }
 
     fn key_unwrap(
