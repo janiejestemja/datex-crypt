@@ -1,8 +1,5 @@
+use super::crypto::{CryptoError, CryptoTrait, PRI_KEY_LEN, PUB_KEY_LEN, SIG_LEN};
 use std::pin::Pin;
-use super::crypto::{
-    CryptoTrait, CryptoError,
-    PUB_KEY_LEN, PRI_KEY_LEN, SIG_LEN,
-};
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -28,8 +25,12 @@ impl Crypt {
 #[cfg(target_arch = "wasm32")]
 impl CryptoTrait for Crypt {
     // EdDSA
-    fn gen_ed25519(
-    ) -> Pin<Box<dyn Future<Output = Result<([u8; PRI_KEY_LEN], [u8; PUB_KEY_LEN]), CryptoError>> + 'static>> {
+    fn gen_ed25519() -> Pin<
+        Box<
+            dyn Future<Output = Result<([u8; PRI_KEY_LEN], [u8; PUB_KEY_LEN]), CryptoError>>
+                + 'static,
+        >,
+    > {
         todo!();
     }
 

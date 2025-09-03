@@ -6,8 +6,12 @@ pub const SIG_LEN: usize = 64;
 
 pub trait CryptoTrait {
     // EdDSA
-    fn gen_ed25519(
-    ) -> Pin<Box<dyn Future<Output = Result<([u8; PRI_KEY_LEN], [u8; PUB_KEY_LEN]), CryptoError>> + 'static>>;
+    fn gen_ed25519() -> Pin<
+        Box<
+            dyn Future<Output = Result<([u8; PRI_KEY_LEN], [u8; PUB_KEY_LEN]), CryptoError>>
+                + 'static,
+        >,
+    >;
 
     fn sig_ed25519<'a>(
         pri_key: &'a [u8; PRI_KEY_LEN],
