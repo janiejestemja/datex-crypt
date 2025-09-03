@@ -30,6 +30,14 @@ pub trait CryptoTrait {
         iv: &[u8; 16],
         plaintext: &[u8],
     ) -> Result<Vec<u8>, CryptoError>;
+
+    // DH
+    fn gen_x25519() -> Result<([u8; 32], [u8; 32]), CryptoError>;
+
+    fn derive_x25519(
+        my_raw: &[u8; 32],
+        peer_pub: &[u8; 32],
+    ) -> Result<Vec<u8>, CryptoError>;
 }
 
 #[derive(Debug, Clone)]

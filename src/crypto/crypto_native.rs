@@ -2,6 +2,8 @@ use super::crypto::{CryptoError, CryptoTrait};
 use std::pin::Pin;
 
 use openssl::{
+    aes::{wrap_key, unwrap_key},
+    derive::Deriver,
     md::Md,
     pkey::{Id, PKey},
     pkey_ctx::{HkdfMode, PkeyCtx},
@@ -121,5 +123,40 @@ impl CryptoTrait for Crypt {
             .map_err(|_| CryptoError::EncryptionError)?;
         out.truncate(count);
         Ok(out)
+    }
+
+    // Generate encryption keypair
+    fn gen_x25519() -> Result<([u8; 32], [u8; 32]), CryptoError> {
+        let key = PKey::generate_x25519().map_err(|_| CryptoError::KeyGeneratorFailed)?;
+        let public_key: [u8; 32] = key
+            .raw_public_key()
+            .map_err(|_| CryptoError::KeyGeneratorFailed)?
+            .try_into()
+            .map_err(|_| CryptoError::KeyGeneratorFailed)?;
+        let private_key: [u8; 32] = key
+            .raw_private_key()
+            .map_err(|_| CryptoError::KeyGeneratorFailed)?
+            .try_into()
+            .map_err(|_| CryptoError::KeyGeneratorFailed)?;
+        Ok((public_key, private_key))
+    }
+
+    // Derive shared secret on x255109
+    fn derive_x25519(
+        my_raw: &[u8; 32],
+        peer_pub: &[u8; 32],
+    ) -> Result<Vec<u8>, CryptoError> {
+        let peer_pub = PKey::public_key_from_raw_bytes(peer_pub, Id::X25519)
+            .map_err(|_| CryptoError::KeyImportFailed)?;
+        let my_priv = PKey::private_key_from_raw_bytes(my_raw, Id::X25519)
+            .map_err(|_| CryptoError::KeyImportFailed)?;
+
+        let mut deriver = Deriver::new(&my_priv).map_err(|_| CryptoError::KeyDerivationFailed)?;
+        deriver
+            .set_peer(&peer_pub)
+            .map_err(|_| CryptoError::KeyDerivationFailed)?;
+        deriver
+            .derive_to_vec()
+            .map_err(|_| CryptoError::KeyDerivationFailed)
     }
 }

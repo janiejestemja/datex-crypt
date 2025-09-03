@@ -53,3 +53,15 @@ fn aes_ctr_roundtrip() {
     assert_ne!(data, cipher);
     assert_eq!(plain, data);
 }
+
+#[test]
+fn test_dh_x25519() {
+    let (ser_pub, ser_pri) = Crypt::gen_x25519().unwrap();
+    let (cli_pub, cli_pri) = Crypt::gen_x25519().unwrap();
+
+    let cli_shared = Crypt::derive_x25519(&cli_pri, &ser_pub).unwrap();
+    let ser_shared = Crypt::derive_x25519(&ser_pri, &cli_pub).unwrap();
+
+    assert_eq!(cli_shared, ser_shared);
+    assert_eq!(cli_shared.len(), 32);
+}
