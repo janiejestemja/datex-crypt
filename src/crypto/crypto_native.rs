@@ -160,35 +160,41 @@ impl CryptoTrait for Crypt {
             .derive_to_vec()
             .map_err(|_| CryptoError::KeyDerivationFailed)
     }
+
     fn encrypt_payload(
     ) -> Result<Vec<u8>, CryptoError> {
+        // Key encryption key
         let kek_bytes = [1u8; 32];
         let kek = AesKey::new_encrypt(&kek_bytes).unwrap();
 
+        // IV
         let iv = [0u8; 8];
 
+        // Random key
         let mut rb = [0u8; 32];
         rand_bytes(&mut rb).map_err(|_| CryptoError::KeyDerivationFailed)?;
 
-        let mut outbuf = [0u8; 40];
-        let length = wrap_key(&kek, Some(iv), &mut outbuf, &rb);
+        // Key wrap
+        let mut wrapped = [0u8; 40];
+        let _length = wrap_key(&kek, Some(iv), &mut wrapped, &rb);
 
-        Ok(outbuf.to_vec())
+        Ok(wrapped.to_vec())
     }
 
     fn decrypt_payload(
         cipher: &Vec<u8>,
     ) -> Result<Vec<u8>, CryptoError> {
-
+        // Key encryption key
         let kek_bytes = [1u8; 32];
         let kek = AesKey::new_decrypt(&kek_bytes).unwrap();
 
+        // IV
         let iv = [0u8; 8];
 
+        // Unwrap key 
+        let mut unwrapped: [u8; 32] = [0u8; 32];
+        let _length = unwrap_key(&kek, Some(iv), &mut unwrapped, &cipher);
 
-        let mut outbuf: [u8; 32] = [0u8; 32];
-        let length = unwrap_key(&kek, Some(iv), &mut outbuf, &cipher);
-
-        Ok(outbuf.to_vec())
+        Ok(unwrapped.to_vec())
     }
 }
