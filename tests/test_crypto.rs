@@ -80,22 +80,29 @@ fn test_keywrapping() {
 
 #[test]
 fn test_roundtrip() {
-    let kek_bytes = [1u8; 32]; //placeholder
+    // Given
+    let (cli_pub, cli_pri) = Crypt::gen_x25519().unwrap();
+
+    // Sender (server)
+    let (ser_pub, ser_pri) = Crypt::gen_x25519().unwrap();
+    let ser_kek_bytes: [u8; 32] = Crypt::derive_x25519(&ser_pri, &cli_pub)
+        .unwrap().try_into().unwrap();
 
     // Generate wrapped and symmetric random key
-    let (arand, sym_key) = Crypt::key_upwrap(&kek_bytes)
+    let (arand, sym_key) = Crypt::key_upwrap(&ser_kek_bytes)
         .unwrap();
 
-    // Sender
     // Encrypt data with symmetric key
     let data = b"Some message to encrypt".to_vec();
     let iv = [0u8; 16];
     let cipher = Crypt::aes_ctr_encrypt(&sym_key, &iv, &data).unwrap();
 
 
-    // Receiver
+    // Receiver (client)
     // Unwraps key and decrypts
-    let brand = Crypt::key_unwrap(&kek_bytes, &arand)
+    let cli_kek_bytes: [u8; 32] = Crypt::derive_x25519(&cli_pri, &ser_pub)
+        .unwrap().try_into().unwrap();
+    let brand = Crypt::key_unwrap(&cli_kek_bytes, &arand)
         .unwrap();
     let plain = Crypt::aes_ctr_encrypt(&brand, &iv, &cipher).unwrap();
 
