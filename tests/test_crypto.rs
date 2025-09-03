@@ -65,3 +65,13 @@ fn test_dh_x25519() {
     assert_eq!(cli_shared, ser_shared);
     assert_eq!(cli_shared.len(), 32);
 }
+
+#[test]
+fn test_prot() {
+    let arand = Crypt::encrypt_payload()
+        .unwrap();
+    let brand = Crypt::decrypt_payload()
+        .unwrap();
+
+    assert_ne!(arand, brand);
+}

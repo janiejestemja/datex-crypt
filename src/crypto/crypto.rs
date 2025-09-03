@@ -38,6 +38,12 @@ pub trait CryptoTrait {
         my_raw: &[u8; 32],
         peer_pub: &[u8; 32],
     ) -> Result<Vec<u8>, CryptoError>;
+
+    fn encrypt_payload(
+    ) -> Result<Vec<u8>, CryptoError>;
+
+    fn decrypt_payload(
+    ) -> Result<Vec<u8>, CryptoError>;
 }
 
 #[derive(Debug, Clone)]

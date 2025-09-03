@@ -7,6 +7,7 @@ use openssl::{
     md::Md,
     pkey::{Id, PKey},
     pkey_ctx::{HkdfMode, PkeyCtx},
+    rand::rand_bytes,
     sign::{Signer, Verifier},
     symm::{Cipher, Crypter, Mode},
 };
@@ -158,5 +159,18 @@ impl CryptoTrait for Crypt {
         deriver
             .derive_to_vec()
             .map_err(|_| CryptoError::KeyDerivationFailed)
+    }
+    fn encrypt_payload(
+    ) -> Result<Vec<u8>, CryptoError> {
+        let mut rb = [0u8; 32];
+        rand_bytes(&mut rb).map_err(|_| CryptoError::KeyDerivationFailed)?;
+        Ok(rb.to_vec())
+    }
+
+    fn decrypt_payload(
+    ) -> Result<Vec<u8>, CryptoError> {
+        let mut rb = [0u8; 32];
+        rand_bytes(&mut rb).map_err(|_| CryptoError::KeyDerivationFailed)?;
+        Ok(rb.to_vec())
     }
 }
