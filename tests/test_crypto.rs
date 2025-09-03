@@ -70,8 +70,9 @@ fn test_dh_x25519() {
 fn test_prot() {
     let arand = Crypt::encrypt_payload()
         .unwrap();
-    let brand = Crypt::decrypt_payload()
+    let brand = Crypt::decrypt_payload(&arand)
         .unwrap();
 
     assert_ne!(arand, brand);
+    assert_eq!(arand.len() , brand.len() + 8);
 }

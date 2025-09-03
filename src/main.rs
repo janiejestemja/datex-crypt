@@ -1,6 +1,12 @@
+use datex_crypt::crypto::crypto::CryptoTrait;
 use datex_crypt::crypto::crypto_native::Crypt;
 
 fn main() {
-    let crypta: Crypt = Crypt::new(b"RsCrypt".to_vec());
-    println!("{:?}", crypta.name());
+    let arand = Crypt::encrypt_payload()
+        .unwrap();
+    let brand = Crypt::decrypt_payload(&arand)
+        .unwrap();
+
+    println!("{:?}", arand.len());
+    println!("{:?}", brand.len());
 }

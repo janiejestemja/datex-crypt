@@ -2,7 +2,7 @@ use super::crypto::{CryptoError, CryptoTrait};
 use std::pin::Pin;
 
 use openssl::{
-    aes::{wrap_key, unwrap_key},
+    aes::{AesKey, unwrap_key, wrap_key},
     derive::Deriver,
     md::Md,
     pkey::{Id, PKey},
@@ -162,15 +162,33 @@ impl CryptoTrait for Crypt {
     }
     fn encrypt_payload(
     ) -> Result<Vec<u8>, CryptoError> {
+        let kek_bytes = [1u8; 32];
+        let kek = AesKey::new_encrypt(&kek_bytes).unwrap();
+
+        let iv = [0u8; 8];
+
         let mut rb = [0u8; 32];
         rand_bytes(&mut rb).map_err(|_| CryptoError::KeyDerivationFailed)?;
-        Ok(rb.to_vec())
+
+        let mut outbuf = [0u8; 40];
+        let length = wrap_key(&kek, Some(iv), &mut outbuf, &rb);
+
+        Ok(outbuf.to_vec())
     }
 
     fn decrypt_payload(
+        cipher: &Vec<u8>,
     ) -> Result<Vec<u8>, CryptoError> {
-        let mut rb = [0u8; 32];
-        rand_bytes(&mut rb).map_err(|_| CryptoError::KeyDerivationFailed)?;
-        Ok(rb.to_vec())
+
+        let kek_bytes = [1u8; 32];
+        let kek = AesKey::new_decrypt(&kek_bytes).unwrap();
+
+        let iv = [0u8; 8];
+
+
+        let mut outbuf: [u8; 32] = [0u8; 32];
+        let length = unwrap_key(&kek, Some(iv), &mut outbuf, &cipher);
+
+        Ok(outbuf.to_vec())
     }
 }

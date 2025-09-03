@@ -43,6 +43,7 @@ pub trait CryptoTrait {
     ) -> Result<Vec<u8>, CryptoError>;
 
     fn decrypt_payload(
+        cipher: &Vec<u8>,
     ) -> Result<Vec<u8>, CryptoError>;
 }
 
