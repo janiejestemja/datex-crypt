@@ -41,7 +41,7 @@ pub trait CryptoTrait {
 
     fn key_upwrap(
         kek_bytes: &[u8; 32],
-    ) -> Result<[u8; 40], CryptoError>;
+    ) -> Result<([u8; 40], [u8; 32]), CryptoError>;
 
     fn key_unwrap(
         kek_bytes: &[u8; 32],

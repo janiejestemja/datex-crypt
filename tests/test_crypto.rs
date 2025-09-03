@@ -69,11 +69,41 @@ fn test_dh_x25519() {
 #[test]
 fn test_keywrapping() {
     let kek_bytes = [1u8; 32];
-    let arand = Crypt::key_upwrap(&kek_bytes)
+    let (arand, sym_key) = Crypt::key_upwrap(&kek_bytes)
         .unwrap();
     let brand = Crypt::key_unwrap(&kek_bytes, &arand)
         .unwrap();
 
     assert_ne!(arand.to_vec(), brand.to_vec());
     assert_eq!(arand.len() , brand.len() + 8);
+}
+
+#[test]
+fn test_roundtrip() {
+    let kek_bytes = [1u8; 32]; //placeholder
+
+    // Generate wrapped and symmetric random key
+    let (arand, sym_key) = Crypt::key_upwrap(&kek_bytes)
+        .unwrap();
+
+    // Sender
+    // Encrypt data with symmetric key
+    let data = b"Some message to encrypt".to_vec();
+    let iv = [0u8; 16];
+    let cipher = Crypt::aes_ctr_encrypt(&sym_key, &iv, &data).unwrap();
+
+
+    // Receiver
+    // Unwraps key and decrypts
+    let brand = Crypt::key_unwrap(&kek_bytes, &arand)
+        .unwrap();
+    let plain = Crypt::aes_ctr_encrypt(&brand, &iv, &cipher).unwrap();
+
+    // Check key wraps
+    assert_ne!(arand.to_vec(), brand.to_vec());
+    assert_eq!(arand.len() , brand.len() + 8);
+
+    // Check data, cipher and deciphered
+    assert_ne!(data, cipher);
+    assert_eq!(plain, data);
 }

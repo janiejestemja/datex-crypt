@@ -163,7 +163,7 @@ impl CryptoTrait for Crypt {
 
     fn key_upwrap(
         kek_bytes: &[u8; 32],
-    ) -> Result<[u8; 40], CryptoError> {
+    ) -> Result<([u8; 40], [u8; 32]), CryptoError> {
         // Key encryption key
         let kek = AesKey::new_encrypt(kek_bytes).unwrap();
 
@@ -178,7 +178,7 @@ impl CryptoTrait for Crypt {
         let mut wrapped = [0u8; 40];
         let _length = wrap_key(&kek, Some(iv), &mut wrapped, &rb);
 
-        Ok(wrapped)
+        Ok((wrapped, rb))
     }
 
     fn key_unwrap(
