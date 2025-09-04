@@ -5,21 +5,21 @@
 So how do i protect our secrets from... well... me?
 
 Sender
-1. Generate symmetric message-key
+1. Generate symmetric message-key (for AES-CTR or AES-GCM)
 2. Encrypt something (e.g. a message)
 3. For each recipient:
-  - 3.1 Generate recipient specific ephemeral keypair
-  - 3.2 Derive a shared secred with recipients long term public key
-  - 3.3 Wrap the message-key with the shared secret as key encryption key (KEK)
+  - 3.1 Generate recipient specific ephemeral keypair (X25519)
+  - 3.2 Derive a shared secred with recipients long term public key (ECDH - epehemeral private with static public)
+  - 3.3 Wrap the message-key with the shared secret as key encryption key (KEK for AES-KW)
   - 3.4 Prepare payload (containing ephemeral public key, wrapped key, encrypted message)
   - 3.5 Destroy all ephemeral keypairs (forward security)
 4. Send each recpipient their payload
 
 Recipient
 1. Receive payload 
-2. Derive shared secret using long term private and ephemeral public
-3. Unwrap the message key
-4. Decrypt the message
+2. Derive shared secret using long term private and ephemeral public (ECDH - static private with epehemeral public)
+3. Unwrap the message key (AES-KW)
+4. Decrypt the message (AES-CTR or AES-GCM)
 
 ### Details
 ---
