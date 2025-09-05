@@ -2,40 +2,6 @@ use datex_crypt::crypto::crypto::CryptoTrait;
 use datex_crypt::crypto::crypto_native::Crypt;
 
 fn main() {
-    let kek: [u8; 32] = 
-    [176, 213,  29, 202, 131,  45, 220,
-    153, 250, 120, 219,  65, 177, 117,
-    244, 172,  38, 107, 221, 109, 160,
-    134,  15, 195,  23,  22, 143, 238,
-    242, 222,  38, 248];
-
-
-    let web_wrapped: [u8; 40] = 
-    [140, 223, 207,  46,   9, 105, 205,  24, 174,
-    238, 109,   5,  96,   4,  51, 132,  54, 187,
-    251, 167, 105, 131, 109, 246, 123, 238, 160,
-    139, 180,  59, 185,   8, 191,  57, 139, 133,
-     19,  40,  15, 210];
-
-    let wrapped = Crypt::key_upwrap(&kek, &kek).unwrap();
-
-    let unwrapped = Crypt::key_unwrap(&kek, &wrapped).unwrap();
-    let web_unwrapped = Crypt::key_unwrap(&kek, &web_wrapped).unwrap();
-
-    println!("{:?}", wrapped);
-    println!("{:?}", wrapped.len());
-
-    println!("{:?}", kek);
-    println!("{:?}", kek.len());
-
-    println!("{:?}", unwrapped);
-    println!("{:?}", unwrapped.len());
-
-    println!("{:?}", web_unwrapped);
-    println!("{:?}", web_unwrapped.len());
-
-}
-fn legacy_main() {
     // Given
     let mut client_list = Vec::new();
 
