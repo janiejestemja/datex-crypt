@@ -180,7 +180,7 @@ impl CryptoTrait for Crypt {
 
         // Key wrap
         let mut wrapped = [0u8; 40];
-        let _length = wrap_key(&kek, Some(iv), &mut wrapped, rb);
+        let _length = wrap_key(&kek, None, &mut wrapped, rb);
 
         Ok(wrapped)
     }
@@ -197,7 +197,7 @@ impl CryptoTrait for Crypt {
 
         // Unwrap key 
         let mut unwrapped: [u8; 32] = [0u8; 32];
-        let _length = unwrap_key(&kek, Some(iv), &mut unwrapped, cipher);
+        let _length = unwrap_key(&kek, None, &mut unwrapped, cipher);
 
         Ok(unwrapped)
     }
