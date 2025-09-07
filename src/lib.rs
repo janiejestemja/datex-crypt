@@ -49,33 +49,33 @@ pub fn client() {
 
 pub fn server() {
     println!("Server logic");
-    let listener = TcpListener::bind("127.0.1.1:9090").unwrap();
+    // Generate symmetric random key
+    let sym_key = Crypt::sym_key_gen().unwrap();
 
+    // Encrypt a message with the symmetric key
+    let data = b"Pre-encrypted message[end]".to_vec();
+    let iv = [0u8; 16];
+    let cipher = Crypt::aes_ctr_encrypt(&sym_key, &iv, &data).unwrap();
+
+    // Wait for connection
+    let listener = TcpListener::bind("127.0.1.1:9090").unwrap();
     for stream in listener.incoming() {
         match stream {
             Ok(mut stream) => {
-                // Read the client's public key
+                // Receive the client's public key
                 let mut buffer = [0; 32];
                 stream.read(&mut buffer).unwrap();
                 let cli_pub = buffer.to_vec();
-
-                // Generate symmetric random key
-                let sym_key = Crypt::sym_key_gen().unwrap();
-
-                // Encrypt a message with the symmetric key
-                let data = b"Pre-encrypted message[end]".to_vec();
-                let iv = [0u8; 16];
-                let cipher = Crypt::aes_ctr_encrypt(&sym_key, &iv, &data).unwrap();
 
                 // Wrap the symmetric key
                 let (mut ser_pri, ser_pub) = Crypt::gen_x25519().unwrap();
                 let ser_kek_bytes: [u8; 32] = Crypt::derive_x25519(&ser_pri, &cli_pub.try_into().unwrap()).unwrap().try_into().unwrap();
                 let wrapped = Crypt::key_upwrap(&ser_kek_bytes, &sym_key).unwrap();
 
-                // Zeroize ephemeral key
+                // Zeroize ephemeral key (at least the private one...)
                 ser_pri.zeroize();
 
-                // Send server's public key, wrapped key, and encrypted message back to the client
+                // Send server's ephemeral public key, wrapped key, and encrypted message back to the client
                 let response = [ser_pub.as_slice(), wrapped.as_slice(), cipher.as_slice()].concat();
                 stream.write(&response).unwrap();
             }
