@@ -1,5 +1,16 @@
 ## Workflow
 ---
+### Dev notes
+To build server side 
+```
+cargo build --features server
+```
+
+To build client side
+```
+cargo build --features client
+```
+
 ### Overview
 ---
 So how do i protect our secrets from... well... me?
