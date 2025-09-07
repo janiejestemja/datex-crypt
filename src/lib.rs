@@ -1,8 +1,9 @@
-pub mod crypto;
-
 use std::net::{TcpListener, TcpStream};
 use std::io::{Read, Write};
 
+use zeroize::Zeroize;
+
+pub mod crypto;
 use crate::crypto::crypto::CryptoTrait;
 use crate::crypto::crypto_native::Crypt;
 
@@ -67,9 +68,12 @@ pub fn server() {
                 let cipher = Crypt::aes_ctr_encrypt(&sym_key, &iv, &data).unwrap();
 
                 // Wrap the symmetric key
-                let (ser_pri, ser_pub) = Crypt::gen_x25519().unwrap();
+                let (mut ser_pri, ser_pub) = Crypt::gen_x25519().unwrap();
                 let ser_kek_bytes: [u8; 32] = Crypt::derive_x25519(&ser_pri, &cli_pub.try_into().unwrap()).unwrap().try_into().unwrap();
                 let wrapped = Crypt::key_upwrap(&ser_kek_bytes, &sym_key).unwrap();
+
+                // Zeroize ephemeral key
+                ser_pri.zeroize();
 
                 // Send server's public key, wrapped key, and encrypted message back to the client
                 let response = [ser_pub.as_slice(), wrapped.as_slice(), cipher.as_slice()].concat();
