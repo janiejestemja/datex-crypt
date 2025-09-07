@@ -1,13 +1,15 @@
 use datex_crypt::{client, server};
 
-fn main() {
+#[tokio::main]
+async fn main() {
+
     #[cfg(feature = "client")]
     {
-        client();
+        client().await;
     }
 
     #[cfg(feature = "server")]
     {
-        server();
+        server().await;
     }
 }
