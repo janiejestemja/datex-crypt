@@ -12,6 +12,76 @@ pub async fn client() {
     let cry = Crypt::new(b"Client".to_vec());
     let mut stream = TcpStream::connect("127.0.1.1:9090").unwrap();
 
+    // Receive servers's public key, and (non-encrypted) message
+    let mut buffer = [0; 1024];
+    stream.read(&mut buffer).unwrap();
+
+    // Extract server's public key, wrapped key, and cipher text...
+    let ser_sig_pub = &buffer[0..44];
+    let ser_sig = &buffer[44..108];
+    let data = &buffer[108..];
+
+
+
+    // Cut off garbage
+    if let Some(pos) = String::from_utf8_lossy(&data).find("[end]") {
+        let message = &data[..pos + 5];
+
+
+        // Verify signature
+        let ver = cry.ver_ed25519(&ser_sig_pub.to_vec(), ser_sig.try_into().unwrap(), &message.to_vec()).await.unwrap();
+        println!("{:?}", ver);
+
+        println!("{:?}", String::from_utf8(message.to_vec()).unwrap());
+    } else {
+        //
+    // If no end tag just print including garbage
+    println!("Client decrypted message: {:?}", String::from_utf8_lossy(&data));
+    }
+}
+
+
+pub async fn server() {
+    println!("Server logic");
+    let cry = Crypt::new(b"Server".to_vec());
+
+    // Generate signature key
+    let (pub_key, pri_key) = cry.gen_ed25519().await.unwrap();
+
+    // Encrypt a message with the symmetric key
+    let data = b"Pre-encrypted message[end]".to_vec();
+
+    // Wait for connection
+    let listener = TcpListener::bind("127.0.1.1:9090").unwrap();
+    for stream in listener.incoming() {
+        match stream {
+            Ok(mut stream) => {
+                //
+                // Sign ephemeral public key
+                let sig = cry.sig_ed25519(&pri_key, &data.to_vec()).await.unwrap();
+
+                // Send server's ephemeral public key, wrapped key, and encrypted message back to the client
+                let response = [
+                    pub_key.as_slice(),
+                    sig.as_slice(),
+                    data.as_slice()
+                ]
+                .concat();
+
+                stream.write(&response).unwrap();
+            }
+            Err(e) => {
+                println!("Error: {}", e);
+            }
+        }
+    }
+}
+
+pub async fn sig_cry_client() {
+    println!("Client logic");
+    let cry = Crypt::new(b"Client".to_vec());
+    let mut stream = TcpStream::connect("127.0.1.1:9090").unwrap();
+
     // Generate client key pair
     let (cli_pri, cli_pub) = Crypt::gen_x25519().unwrap();
 
@@ -56,7 +126,7 @@ pub async fn client() {
 }
 
 
-pub async fn server() {
+pub async fn sig_cry_server() {
     println!("Server logic");
     let cry = Crypt::new(b"Server".to_vec());
 
