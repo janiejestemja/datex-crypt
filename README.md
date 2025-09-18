@@ -104,4 +104,4 @@ dec(k_msg, cipher) -> msg
 - multi recipient
   - each recipient gets a unique eph key + wrapped key, thus the message ciphertext is only encrypted once
 - no meta leak compromise
-  - only the fact thtat the same message was sent to multiple recipients might be inferred - keys remain secure
+  - only the fact that the same message was sent to multiple recipients might be inferred - keys remain secure
